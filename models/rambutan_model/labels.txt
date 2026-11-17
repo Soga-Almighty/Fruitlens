@@ -1,0 +1,3 @@
+0 rambutan mentah
+1 rambutan matang
+2 rambutan busuk

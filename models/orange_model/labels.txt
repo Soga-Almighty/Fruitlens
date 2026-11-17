@@ -1,0 +1,3 @@
+0 jeruk busuk
+1 Jeruk matang
+2 jeruk mentah

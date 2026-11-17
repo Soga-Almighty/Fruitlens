@@ -1,0 +1,8 @@
+# Used by the Dockerfile (servers). No TensorFlow: the models run on the small TensorFlow Lite runtime
+# (ai-edge-litert) using the models/*/model.tflite files made by tools/convert_models.py.
+Flask
+gunicorn
+ai-edge-litert
+Pillow
+numpy
+requests

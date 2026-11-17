@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Sign in - Fruit Lens</title>
+    <meta name="theme-color" content="#12261c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="FruitLens">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: {
+                    forest: { 50: '#f2f7f4', 100: '#e1ede6', 500: '#2d5a43', 800: '#1b3829', 900: '#12261c' },
+                    sage: { 100: '#e8efe9', 300: '#b2cca3', 500: '#7a9e7e' },
+                    cream: '#FAF8f5',
+                    accent: { orange: '#e67e22', amber: '#f39c12', red: '#e74c3c', green: '#27ae60' }
+                },
+                fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'], display: ['Outfit', 'sans-serif'] },
+                borderRadius: { 'xl2': '20px', 'xl3': '28px' }
+            } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF8f5; color: #12261c; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .float-a { animation: float 6s ease-in-out infinite; }
+        .float-b { animation: float 7s ease-in-out infinite .8s; }
+        .field:focus { outline: none; border-color: #2d5a43; box-shadow: 0 0 0 3px rgba(45, 90, 67, .15); }
+        .field.invalid { border-color: #e74c3c; box-shadow: 0 0 0 3px rgba(231, 76, 60, .12); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin .8s linear infinite; }
+        html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+        button, label, a { touch-action: manipulation; }
+        .page-full { min-height: 100vh; min-height: 100dvh; }
+        body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+               padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+        /* iOS Safari zooms the page when a field's font is smaller than 16px */
+        @media (max-width: 640px) { input, select, textarea { font-size: 16px !important; } }
+    </style>
+</head>
+<body class="page-full">
+<div class="page-full grid lg:grid-cols-2">
+
+    <!-- Brand panel -->
+    <aside class="hidden lg:flex relative overflow-hidden bg-gradient-to-br from-forest-900 via-forest-800 to-forest-500 text-white p-12 flex-col justify-between">
+        <div class="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
+        <div class="absolute right-32 top-10 w-40 h-40 rounded-full bg-accent-orange/15 blur-2xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-forest-500 flex items-center justify-center text-cream border border-sage-300/20"><i data-lucide="apple" class="w-6 h-6"></i></div>
+            <span class="font-display font-bold text-2xl">Fruit<span class="text-accent-orange">Lens</span></span>
+        </div>
+
+        <div class="relative z-10 max-w-md space-y-8">
+            <div class="space-y-4">
+                <span class="bg-sage-500/30 text-sage-300 text-xs font-medium px-3 py-1 rounded-full border border-sage-300/20 inline-flex items-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-accent-orange"></i> Computer Vision Ripeness Scanner
+                </span>
+                <h1 class="font-display text-4xl xl:text-5xl font-bold leading-tight text-cream">Know when your fruit is at its best.</h1>
+                <p class="text-sage-100 text-sm leading-relaxed opacity-90">Scan bananas, tomatoes, papayas, oranges and rambutans. Get ripeness, shelf life and storage advice in seconds.</p>
+            </div>
+            <ul class="space-y-4">
+                <li class="flex gap-3 items-start"><span class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="scan" class="w-4 h-4 text-accent-orange"></i></span><div><p class="text-sm font-semibold">Instant ripeness scan</p><p class="text-xs text-sage-300">Upload a photo or use your camera.</p></div></li>
+                <li class="flex gap-3 items-start"><span class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="history" class="w-4 h-4 text-accent-orange"></i></span><div><p class="text-sm font-semibold">Your own scan history</p><p class="text-xs text-sage-300">Saved to your account, private to you.</p></div></li>
+                <li class="flex gap-3 items-start"><span class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="lightbulb" class="w-4 h-4 text-accent-orange"></i></span><div><p class="text-sm font-semibold">Smart storage tips</p><p class="text-xs text-sage-300">Personal advice to cut food waste.</p></div></li>
+            </ul>
+        </div>
+
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="flex -space-x-3">
+                <img class="float-a w-14 h-14 rounded-full object-cover border-4 border-forest-800" src="https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&q=80&w=160" alt="" onerror="this.style.visibility='hidden'">
+                <img class="float-b w-14 h-14 rounded-full object-cover border-4 border-forest-800" src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=160" alt="" onerror="this.style.visibility='hidden'">
+                <img class="float-a w-14 h-14 rounded-full object-cover border-4 border-forest-800" src="https://images.unsplash.com/photo-1617112848923-cc2234396a8d?auto=format&fit=crop&q=80&w=160" alt="" onerror="this.style.visibility='hidden'">
+                <img class="float-b w-14 h-14 rounded-full object-cover border-4 border-forest-800" src="https://images.unsplash.com/photo-1635830092719-0e3b5aedc364?auto=format&fit=crop&q=80&w=160" alt="" onerror="this.style.visibility='hidden'">
+                <img class="float-a w-14 h-14 rounded-full object-cover border-4 border-forest-800" src="https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&q=80&w=160" alt="" onerror="this.style.visibility='hidden'">
+            </div>
+            <p class="text-xs text-sage-300">5 fruit models<br>3 ripeness stages each</p>
+        </div>
+    </aside>
+
+    <!-- Form panel -->
+    <main class="flex items-center justify-center p-5 sm:p-10">
+        <div class="w-full max-w-md">
+            <div class="lg:hidden flex items-center justify-center gap-2 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-forest-500 text-white flex items-center justify-center"><i data-lucide="apple" class="w-5 h-5"></i></div>
+                <span class="font-display font-bold text-2xl text-forest-900">Fruit<span class="text-accent-orange">Lens</span></span>
+            </div>
+
+            <div class="bg-white rounded-xl3 border border-forest-100 shadow-xl p-6 sm:p-8 space-y-5">
+                <div id="setup-banner" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                    <i data-lucide="plug-zap" class="w-4 h-4 shrink-0 mt-px"></i><span id="setup-text"></span>
+                </div>
+
+                <div id="tabs" class="grid grid-cols-2 bg-cream rounded-xl p-1 text-sm font-semibold" role="tablist">
+                    <button type="button" id="tab-signin" role="tab" onclick="setMode('signin')" class="py-2.5 rounded-lg transition">Sign in</button>
+                    <button type="button" id="tab-register" role="tab" onclick="setMode('register')" class="py-2.5 rounded-lg transition">Create account</button>
+                </div>
+
+                <div>
+                    <h2 id="form-title" class="font-display text-2xl font-bold text-forest-900"></h2>
+                    <p id="form-sub" class="text-xs text-gray-500 mt-1 leading-relaxed"></p>
+                </div>
+
+                <div id="notice" role="status" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-900 flex items-start gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4 shrink-0 mt-px"></i><span id="notice-text"></span>
+                </div>
+
+                <!-- Google -->
+                <div data-show="signin register" class="space-y-4">
+                    <a id="google-btn" href="/auth/google" class="hidden w-full items-center justify-center gap-3 border border-gray-300 hover:bg-cream rounded-full py-3 text-sm font-semibold text-forest-900 transition">
+                        <svg viewBox="0 0 48 48" class="w-5 h-5"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                        <span>Continue with Google</span>
+                    </a>
+                    <div id="google-off" class="hidden">
+                        <button type="button" disabled class="w-full flex items-center justify-center gap-3 border border-forest-100 rounded-full py-3 text-sm font-semibold text-gray-400 bg-cream/60 cursor-not-allowed">Continue with Google</button>
+                        <p id="google-off-note" class="text-[11px] text-gray-400 text-center mt-2"></p>
+                    </div>
+                    <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                        <span class="flex-1 h-px bg-gray-100"></span> or with email <span class="flex-1 h-px bg-gray-100"></span>
+                    </div>
+                </div>
+
+                <form id="auth-form" novalidate class="space-y-4">
+                    <p id="email-line" data-show="verify reset" class="text-xs font-semibold text-forest-900 bg-cream rounded-xl px-4 py-3 break-all"></p>
+
+                    <div data-show="register">
+                        <label for="name" class="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1.5">Full name</label>
+                        <div class="relative">
+                            <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input id="name" type="text" autocomplete="name" maxlength="60" placeholder="Your name" class="field w-full bg-white border border-forest-100 rounded-xl pl-10 pr-4 py-3 text-sm">
+                        </div>
+                    </div>
+
+                    <div data-show="signin register forgot">
+                        <label for="email" class="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1.5">Email</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input id="email" type="email" autocomplete="email" placeholder="you@example.com" class="field w-full bg-white border border-forest-100 rounded-xl pl-10 pr-4 py-3 text-sm">
+                        </div>
+                    </div>
+
+                    <div data-show="verify reset">
+                        <label for="code" class="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1.5">6-digit code</label>
+                        <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="field w-full bg-white border border-forest-100 rounded-xl px-4 py-3 text-xl font-bold tracking-[.4em] text-center">
+                    </div>
+
+                    <div data-show="signin register reset">
+                        <label for="password" id="pw-label" class="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1.5">Password</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input id="password" type="password" autocomplete="current-password" maxlength="128" placeholder="Your password" class="field w-full bg-white border border-forest-100 rounded-xl pl-10 pr-11 py-3 text-sm">
+                            <button type="button" id="toggle-pw" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-forest-800" aria-label="Show password"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        </div>
+                        <div data-show="register reset" class="mt-2">
+                            <div class="grid grid-cols-4 gap-1.5"><span class="h-1 rounded-full bg-gray-200" data-bar></span><span class="h-1 rounded-full bg-gray-200" data-bar></span><span class="h-1 rounded-full bg-gray-200" data-bar></span><span class="h-1 rounded-full bg-gray-200" data-bar></span></div>
+                            <p id="pw-hint" class="text-[11px] text-gray-400 mt-1"></p>
+                        </div>
+                    </div>
+
+                    <div data-show="signin" class="flex items-center justify-between text-xs">
+                        <label class="flex items-center gap-2 text-gray-600 cursor-pointer"><input id="remember" type="checkbox" checked class="rounded border-gray-300 text-forest-500 focus:ring-forest-500/30"> Keep me signed in</label>
+                        <button type="button" onclick="setMode('forgot')" class="font-semibold text-forest-500 hover:text-forest-800">Forgot password?</button>
+                    </div>
+
+                    <div id="form-error" role="alert" class="hidden p-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-800 flex items-start gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-px"></i><span id="form-error-text"></span>
+                    </div>
+
+                    <button id="submit-btn" type="submit" class="w-full bg-accent-orange hover:bg-orange-600 disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-lg shadow-accent-orange/30 flex items-center justify-center gap-2 text-sm transition">
+                        <svg id="submit-spinner" class="spinner hidden w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity=".3" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                        <span id="submit-label"></span>
+                    </button>
+
+                    <div data-show="verify reset forgot" class="flex items-center justify-between text-xs pt-1">
+                        <button type="button" onclick="setMode('signin')" class="font-semibold text-gray-500 hover:text-forest-800 flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to sign in</button>
+                        <button type="button" id="link-resend" data-show="verify" onclick="resend()" class="font-semibold text-forest-500 hover:text-forest-800">Resend code</button>
+                    </div>
+                </form>
+
+                <p class="text-[11px] text-gray-400 flex items-center justify-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-forest-500"></i> Accounts are secured by InsForge. Your scans are private to your account.</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {}));
+    }
+    lucide.createIcons();
+    const $ = (id) => document.getElementById(id);
+    let mode = 'signin', busy = false, cfg = { configured: true, password: { min_length: 8 } };
+    const st = { email: '', verifyMethod: 'code', resetMethod: 'code', token: '' };
+
+    const COPY = {
+        signin: () => ({ title: 'Welcome back', sub: 'Sign in to see your scans and keep checking your fruit.', btn: 'Sign in', auto: 'current-password', pw: 'Password' }),
+        register: () => ({ title: 'Create your account', sub: cfg.require_verification ? "We'll email you a code to confirm it's really you." : 'It takes a few seconds. Your scan history stays with your account.', btn: 'Create account', auto: 'new-password', pw: 'Password' }),
+        verify: () => st.verifyMethod === 'link'
+            ? { title: 'Check your email', sub: 'We sent you a verification link. Click it, then come back and sign in.', btn: 'I verified, sign in', auto: '', pw: '' }
+            : { title: 'Check your email', sub: 'Enter the 6-digit code we sent you. It expires in a few minutes.', btn: 'Verify email', auto: '', pw: '' },
+        forgot: () => ({ title: 'Reset your password', sub: "Enter your email and we'll send you a reset " + (cfg.reset_method === 'link' ? 'link.' : 'code.'), btn: cfg.reset_method === 'link' ? 'Send reset link' : 'Send reset code', auto: '', pw: '' }),
+        reset: () => ({ title: 'Choose a new password', sub: st.token ? 'Enter your new password.' : 'Enter the 6-digit code we emailed you and choose a new password.', btn: 'Update password', auto: 'new-password', pw: 'New password' })
+    };
+
+    function policyText() {
+        const p = cfg.password || {}, parts = [`at least ${p.min_length || 8} characters`];
+        if (p.number) parts.push('a number');
+        if (p.lowercase) parts.push('a lowercase letter');
+        if (p.uppercase) parts.push('an uppercase letter');
+        if (p.special) parts.push('a special character');
+        return 'Use ' + parts.join(', ') + '.';
+    }
+
+    function passwordProblem(pw) {
+        const p = cfg.password || {}, need = [];
+        if (pw.length < (p.min_length || 8)) need.push(`at least ${p.min_length || 8} characters`);
+        if (p.number && !/\d/.test(pw)) need.push('a number');
+        if (p.lowercase && !/[a-z]/.test(pw)) need.push('a lowercase letter');
+        if (p.uppercase && !/[A-Z]/.test(pw)) need.push('an uppercase letter');
+        if (p.special && !/[^A-Za-z0-9]/.test(pw)) need.push('a special character');
+        return need.length ? 'Password needs ' + need.join(', ') + '.' : '';
+    }
+
+    function setMode(m) {
+        mode = m;
+        const showCode = m === 'verify' ? st.verifyMethod !== 'link' : m === 'reset' ? !st.token : true;
+        document.querySelectorAll('[data-show]').forEach((el) => {
+            let on = el.dataset.show.split(' ').includes(m);
+            if (el.contains($('code')) && !el.querySelector('form')) on = on && showCode;
+            if (el.id === 'link-resend') on = m === 'verify';
+            el.classList.toggle('hidden', !on);
+        });
+        const c = COPY[m]();
+        $('tabs').classList.toggle('hidden', m !== 'signin' && m !== 'register');
+        for (const t of ['signin', 'register']) {
+            $('tab-' + t).className = 'py-2.5 rounded-lg transition ' + (t === m ? 'bg-white text-forest-900 shadow-sm' : 'text-gray-500 hover:text-forest-900');
+            $('tab-' + t).setAttribute('aria-selected', t === m);
+        }
+        $('form-title').textContent = c.title;
+        $('form-sub').textContent = c.sub;
+        $('submit-label').textContent = c.btn;
+        $('pw-label').textContent = c.pw || 'Password';
+        $('password').setAttribute('autocomplete', c.auto || 'off');
+        $('password').placeholder = m === 'signin' ? 'Your password' : policyText().replace('Use ', '').replace(/^./, (x) => x.toUpperCase());
+        $('pw-hint').textContent = policyText();
+        $('email-line').textContent = st.email ? 'Email: ' + st.email : '';
+        $('password').value = '';
+        $('code').value = '';
+        clearError();
+        if (m === 'signin' || m === 'register') hideNotice();
+        const first = { signin: 'email', register: 'name', forgot: 'email', verify: 'code', reset: st.token ? 'password' : 'code' }[m];
+        if (first && !(m === 'verify' && st.verifyMethod === 'link')) $(first).focus();
+    }
+
+    function togglePassword() {
+        const input = $('password'), show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        $('toggle-pw').innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+        $('toggle-pw').setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        lucide.createIcons();
+    }
+
+    function strength(pw) {
+        let s = 0;
+        if (pw.length >= (cfg.password.min_length || 8)) s++;
+        if (pw.length >= 12) s++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+        if (/\d/.test(pw) || /[^A-Za-z0-9]/.test(pw)) s++;
+        return pw.length ? Math.max(s, 1) : 0;
+    }
+    $('password').addEventListener('input', (e) => {
+        const s = strength(e.target.value), colors = ['bg-gray-200', 'bg-accent-red', 'bg-accent-amber', 'bg-accent-amber', 'bg-accent-green'];
+        document.querySelectorAll('[data-bar]').forEach((bar, i) => { bar.className = 'h-1 rounded-full transition ' + (i < s ? colors[s] : 'bg-gray-200'); });
+        $('pw-hint').textContent = s === 0 ? policyText() : ['', 'Weak', 'Fair', 'Good', 'Strong'][s];
+    });
+    $('code').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
+
+    function clearError() {
+        $('form-error').classList.add('hidden');
+        document.querySelectorAll('.field').forEach((f) => f.classList.remove('invalid'));
+    }
+    function showError(msg, field) {
+        $('form-error-text').textContent = msg;
+        $('form-error').classList.remove('hidden');
+        const input = field && $(field);
+        if (input) { input.classList.add('invalid'); input.focus(); }
+    }
+    function showNotice(msg) { $('notice-text').textContent = msg; $('notice').classList.remove('hidden'); }
+    function hideNotice() { $('notice').classList.add('hidden'); }
+    function setBusy(on) { busy = on; $('submit-btn').disabled = on; $('submit-spinner').classList.toggle('hidden', !on); }
+
+    async function post(url, payload) {
+        const res = await fetch(url, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fruitlens' },
+            body: JSON.stringify(payload || {})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { const err = new Error(data.error || 'Something went wrong. Please try again.'); Object.assign(err, data, { status: res.status }); throw err; }
+        return data;
+    }
+
+    async function resend() {
+        if (busy || !st.email) return;
+        setBusy(true); clearError();
+        try { const r = await post('/api/auth/resend', { email: st.email }); showNotice(r.method === 'link' ? 'A new verification link is on its way.' : 'A new code is on its way. Check your inbox (and spam folder).'); }
+        catch (err) { showError(err.message); }
+        setBusy(false);
+    }
+
+    const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+    $('auth-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (busy) return;
+        clearError();
+        const v = { name: $('name').value.trim(), email: $('email').value.trim(), password: $('password').value, code: $('code').value.trim() };
+        if (mode === 'register' && v.name.length < 2) return showError('Name must be at least 2 characters.', 'name');
+        if (['signin', 'register', 'forgot'].includes(mode) && !EMAIL_RE.test(v.email)) return showError('Please enter a valid email address.', 'email');
+        if (['signin', 'register', 'reset'].includes(mode) && !v.password) return showError('Please enter your password.', 'password');
+        if (['register', 'reset'].includes(mode) && passwordProblem(v.password)) return showError(passwordProblem(v.password), 'password');
+        if (mode === 'verify' && st.verifyMethod !== 'link' && !/^\d{6}$/.test(v.code)) return showError('Enter the 6-digit code from your email.', 'code');
+        if (mode === 'reset' && !st.token && !/^\d{6}$/.test(v.code)) return showError('Enter the 6-digit code from your email.', 'code');
+        setBusy(true);
+        try {
+            if (mode === 'signin') {
+                try { await post('/api/auth/login', { email: v.email, password: v.password, remember: $('remember').checked }); location.replace('/'); return; }
+                catch (err) {
+                    if (err.verify) { st.email = v.email; setMode('verify'); showNotice('Please verify your email first. Use "Resend code" if you need a new one.'); setBusy(false); return; }
+                    throw err;
+                }
+            } else if (mode === 'register') {
+                const r = await post('/api/auth/register', { name: v.name, email: v.email, password: v.password });
+                if (r.verify) { st.email = r.email; st.verifyMethod = r.method; setMode('verify'); showNotice(r.method === 'link' ? `We sent a verification link to ${r.email}.` : `We sent a 6-digit code to ${r.email}.`); setBusy(false); return; }
+                location.replace('/'); return;
+            } else if (mode === 'verify') {
+                if (st.verifyMethod === 'link') { setMode('signin'); $('email').value = st.email; setBusy(false); return; }
+                await post('/api/auth/verify', { email: st.email, code: v.code }); location.replace('/'); return;
+            } else if (mode === 'forgot') {
+                const r = await post('/api/auth/forgot', { email: v.email });
+                st.email = v.email; st.resetMethod = r.method;
+                if (r.method === 'link') { showNotice('If that email has an account, a reset link is on its way. Click it to choose a new password.'); }
+                else { setMode('reset'); showNotice('If that email has an account, a 6-digit code is on its way.'); }
+            } else if (mode === 'reset') {
+                await post('/api/auth/reset', st.token ? { token: st.token, password: v.password } : { email: st.email, code: v.code, password: v.password });
+                st.token = ''; setMode('signin'); $('email').value = st.email; showNotice('Password updated. You can sign in now.');
+            }
+        } catch (err) { showError(err.message, err.field || (mode === 'signin' ? 'password' : null)); }
+        setBusy(false);
+    });
+
+    // ---------- start-up: server config + results of e-mail links ----------
+    function readEmailLinkResult() {
+        const q = new URLSearchParams(location.search), status = q.get('insforge_status'), type = q.get('insforge_type');
+        if (!status) return null;
+        const out = { status, type, token: q.get('token') || '', error: (q.get('insforge_error') || '').slice(0, 160) };
+        history.replaceState(null, '', '/login');  // never leave a reset token in the address bar
+        return out;
+    }
+
+    async function init() {
+        const link = readEmailLinkResult();
+        const wantRegister = new URLSearchParams(location.search).get('mode') === 'register';
+        try { cfg = Object.assign(cfg, await (await fetch('/api/auth/config')).json()); } catch (e) { cfg.configured = false; cfg.error = 'Could not reach the Fruit Lens server.'; }
+        cfg.password = cfg.password || { min_length: 8 };
+        if (cfg.error) { $('setup-text').textContent = cfg.error; $('setup-banner').classList.remove('hidden'); }
+        if (cfg.google) { $('google-btn').classList.remove('hidden'); $('google-btn').classList.add('flex'); $('google-btn').addEventListener('click', () => { $('google-btn').querySelector('span').textContent = 'Redirecting to Google...'; }); }
+        else { $('google-off').classList.remove('hidden'); $('google-off-note').textContent = cfg.error ? 'Connect InsForge first (see README).' : 'Turn on Google in InsForge: Authentication > Auth Methods > Google.'; }
+        setMode(wantRegister ? 'register' : 'signin');
+        if (cfg.flash) showError(cfg.flash);
+        if (link) {
+            if (link.type === 'verify_email' && link.status === 'success') showNotice('Email verified. Please sign in.');
+            else if (link.type === 'reset_password' && link.status === 'ready' && link.token) { st.token = link.token; setMode('reset'); }
+            else if (link.status === 'error') showError(link.error || 'That link is invalid or has expired. Please request a new one.');
+        }
+    }
+    init();
+</script>
+</body>
+</html>

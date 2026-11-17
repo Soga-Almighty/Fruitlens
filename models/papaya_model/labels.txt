@@ -1,0 +1,3 @@
+0 Pepaya Busuk
+1 Pepaya Matang
+2 Pepaya Mentah

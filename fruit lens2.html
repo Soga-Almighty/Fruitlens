@@ -1,0 +1,2514 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Fruit Lens - Smart Vision for Fresher Choices</title>
+    <!-- Mobile / installable app (PWA) -->
+    <meta name="theme-color" content="#12261c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="FruitLens" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              forest: {
+                50: "#f2f7f4",
+                100: "#e1ede6",
+                500: "#2d5a43",
+                800: "#1b3829",
+                900: "#12261c",
+              },
+              sage: {
+                100: "#e8efe9",
+                300: "#b2cca3",
+                500: "#7a9e7e",
+              },
+              cream: "#FAF8f5",
+              accent: {
+                orange: "#e67e22",
+                amber: "#f39c12",
+                red: "#e74c3c",
+                green: "#27ae60",
+              },
+            },
+            fontFamily: {
+              sans: ["Plus Jakarta Sans", "sans-serif"],
+              display: ["Outfit", "sans-serif"],
+            },
+            borderRadius: {
+              xl2: "20px",
+              xl3: "28px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: #faf8f5;
+        color: #12261c;
+        overflow-x: hidden;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #faf8f5;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #b2cca3;
+        border-radius: 4px;
+      }
+
+      /* Scanner Line Animation */
+      @keyframes scan {
+        0% {
+          top: 5%;
+          opacity: 0.8;
+        }
+        50% {
+          top: 90%;
+          opacity: 1;
+        }
+        100% {
+          top: 5%;
+          opacity: 0.8;
+        }
+      }
+      .animate-scan {
+        animation: scan 2.5s infinite ease-in-out;
+      }
+
+      /* Pulse glow for scanner */
+      @keyframes pulse-border {
+        0%,
+        100% {
+          border-color: rgba(122, 158, 126, 0.4);
+          box-shadow: 0 0 15px rgba(122, 158, 126, 0.2);
+        }
+        50% {
+          border-color: rgba(230, 126, 34, 0.8);
+          box-shadow: 0 0 25px rgba(230, 126, 34, 0.4);
+        }
+      }
+      .scanner-active-border {
+        animation: pulse-border 2s infinite;
+      }
+
+      /* Glassmorphism */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(225, 237, 230, 0.6);
+      }
+
+      .glass-dark {
+        background: rgba(27, 56, 41, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* Hide elements dynamically */
+      .page-content {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+      .page-content.active {
+        display: block;
+        opacity: 1;
+      }
+
+      /* ---------- Phone / PWA ---------- */
+      html {
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        overscroll-behavior-y: none; /* no accidental pull-to-refresh while scrolling inside the installed app */
+      }
+      button,
+      label,
+      select,
+      a {
+        touch-action: manipulation; /* no 300 ms tap delay / double-tap zoom on buttons */
+      }
+      /* 100vh is taller than the visible screen on phones (browser address bar): use dynamic viewport height */
+      .app-shell {
+        height: 100vh;
+        height: 100dvh;
+      }
+      /* Keep content clear of the iPhone notch / home bar */
+      .app-header {
+        padding-top: env(safe-area-inset-top);
+      }
+      #toasts {
+        top: calc(env(safe-area-inset-top) + 1rem);
+      }
+      @media (max-width: 1024px) {
+        .mobile-nav {
+          padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+        .mnav-btn {
+          min-width: 56px;
+          min-height: 48px;
+          justify-content: center;
+        }
+        .app-main {
+          padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)) !important;
+        }
+        #user-menu-m {
+          bottom: calc(4.5rem + env(safe-area-inset-bottom));
+          right: max(0.5rem, env(safe-area-inset-right));
+        }
+      }
+      @media (max-width: 640px) {
+        /* iOS Safari zooms the whole page when a field has a font smaller than 16px */
+        input,
+        select,
+        textarea {
+          font-size: 16px !important;
+        }
+        .app-header {
+          min-height: calc(4rem + env(safe-area-inset-top));
+          height: auto !important;
+          padding-left: max(1rem, env(safe-area-inset-left)) !important;
+          padding-right: max(1rem, env(safe-area-inset-right)) !important;
+        }
+        #toasts {
+          left: 1rem;
+          right: 1rem;
+        }
+        #toasts .toast {
+          max-width: none;
+        }
+      }
+      /* Touch screens have no hover: do not leave cards "lifted" after a tap */
+      @media (hover: none) {
+        .hover\:-translate-y-0\.5:hover {
+          transform: none;
+        }
+      }
+      /* Installed app (no browser bar): the page is the whole screen */
+      @media (display-mode: standalone) {
+        body {
+          user-select: none;
+          -webkit-user-select: none;
+        }
+        input,
+        textarea {
+          user-select: text;
+          -webkit-user-select: text;
+        }
+      }
+
+      /* Mobile Adjustments */
+      @media (max-width: 1024px) {
+        .desktop-sidebar {
+          display: none;
+        }
+        .mobile-nav {
+          display: flex;
+        }
+      }
+      @media (min-width: 1025px) {
+        .mobile-nav {
+          display: none;
+        }
+      }
+
+      @keyframes spin-slow {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-spin-slow {
+        animation: spin-slow 12s linear infinite;
+      }
+      .toast {
+        animation: toast-in 0.25s ease-out;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-cream text-forest-900 antialiased selection:bg-sage-300">
+    <div class="app-shell flex overflow-hidden">
+      <!-- DESKTOP SIDEBAR -->
+      <aside
+        class="desktop-sidebar w-72 bg-forest-900 text-white flex flex-col justify-between p-6 z-30 shadow-xl relative"
+      >
+        <div>
+          <!-- Brand Logo -->
+          <div class="flex items-center gap-3 px-2 py-4 mb-6">
+            <div
+              class="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-forest-500 to-sage-500 text-white shadow-lg"
+            >
+              <i
+                data-lucide="aperture"
+                class="w-6 h-6 absolute animate-spin-slow"
+              ></i>
+              <i
+                data-lucide="apple"
+                class="w-4 h-4 relative z-10 text-cream"
+              ></i>
+            </div>
+            <div>
+              <h1
+                class="font-display font-bold text-xl tracking-tight text-cream flex items-center gap-1"
+              >
+                Fruit<span class="text-accent-orange">Lens</span>
+              </h1>
+              <p
+                class="text-[10px] text-sage-300 font-medium tracking-wider uppercase"
+              >
+                Ripeness Scanner
+              </p>
+            </div>
+          </div>
+
+          <!-- Navigation Menu -->
+          <nav class="space-y-1.5">
+            <button
+              onclick="switchTab('dashboard')"
+              id="nav-dashboard"
+              class="nav-btn active w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 bg-forest-800 text-cream shadow-sm"
+            >
+              <i
+                data-lucide="layout-dashboard"
+                class="w-5 h-5 text-accent-orange"
+              ></i>
+              Dashboard
+            </button>
+            <button
+              onclick="switchTab('scan')"
+              id="nav-scan"
+              class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 text-sage-100 hover:bg-forest-800/60 hover:text-white"
+            >
+              <i data-lucide="camera" class="w-5 h-5 text-sage-300"></i>
+              Scan Fruit
+              <span
+                class="ml-auto bg-accent-orange text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+                >AI</span
+              >
+            </button>
+            <button
+              onclick="switchTab('library')"
+              id="nav-library"
+              class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 text-sage-100 hover:bg-forest-800/60 hover:text-white"
+            >
+              <i data-lucide="book-open" class="w-5 h-5 text-sage-300"></i>
+              Fruit Library
+            </button>
+            <button
+              onclick="switchTab('history')"
+              id="nav-history"
+              class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 text-sage-100 hover:bg-forest-800/60 hover:text-white"
+            >
+              <i data-lucide="history" class="w-5 h-5 text-sage-300"></i>
+              Analysis History
+            </button>
+            <button
+              onclick="switchTab('recommendations')"
+              id="nav-recommendations"
+              class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 text-sage-100 hover:bg-forest-800/60 hover:text-white"
+            >
+              <i data-lucide="lightbulb" class="w-5 h-5 text-sage-300"></i>
+              Recommendations
+            </button>
+            <button
+              onclick="switchTab('about')"
+              id="nav-about"
+              class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 text-sage-100 hover:bg-forest-800/60 hover:text-white"
+            >
+              <i data-lucide="info" class="w-5 h-5 text-sage-300"></i>
+              About Platform
+            </button>
+          </nav>
+        </div>
+
+        <!-- Sidebar Bottom -->
+        <div class="pt-6 border-t border-forest-800/80 space-y-3">
+          <div class="relative">
+            <div
+              id="user-menu"
+              class="hidden absolute bottom-full left-0 right-0 mb-2 bg-forest-800 border border-sage-500/30 rounded-xl shadow-2xl p-1.5 z-50"
+            >
+              <div
+                class="px-3 py-2 text-[11px] text-sage-300 flex items-center gap-2"
+              >
+                <i data-lucide="scan" class="w-3.5 h-3.5"></i
+                ><span class="js-user-count">0 scans saved</span>
+              </div>
+              <button
+                onclick="logout()"
+                class="w-full px-3 py-2.5 rounded-lg text-left text-xs font-semibold text-red-300 hover:bg-white/10 flex items-center gap-2"
+              >
+                <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+              </button>
+            </div>
+            <button
+              id="user-card"
+              type="button"
+              onclick="toggleUserMenu(event, 'user-menu')"
+              class="w-full bg-forest-800/50 hover:bg-forest-800 p-3.5 rounded-xl flex items-center gap-3 text-left transition"
+              aria-label="Account menu"
+            >
+              <div
+                class="w-9 h-9 rounded-full bg-forest-500 text-cream text-sm font-bold flex items-center justify-center shrink-0 overflow-hidden"
+              >
+                <span class="js-user-initial">?</span
+                ><img
+                  class="js-user-avatar hidden w-full h-full object-cover"
+                  referrerpolicy="no-referrer"
+                  alt=""
+                />
+              </div>
+              <div class="overflow-hidden flex-1 min-w-0">
+                <h4
+                  class="js-user-name text-xs font-semibold text-white truncate"
+                >
+                  Loading...
+                </h4>
+                <p class="js-user-email text-[11px] text-sage-300 truncate"></p>
+              </div>
+              <i
+                data-lucide="chevrons-up-down"
+                class="w-4 h-4 text-sage-300 shrink-0"
+              ></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-sage-300 px-2 pt-1">
+            <span
+              id="srv-dot"
+              class="w-2 h-2 rounded-full bg-gray-400 inline-block"
+            ></span>
+            <span id="srv-text">Checking server...</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTAINER -->
+      <div class="app-shell flex-1 flex flex-col overflow-hidden">
+        <!-- TOP BAR -->
+        <header
+          class="app-header h-20 bg-white/70 backdrop-blur-md border-b border-forest-100 px-6 lg:px-10 flex items-center justify-between z-20 sticky top-0"
+        >
+          <div class="flex items-center gap-4">
+            <!-- Mobile Logo Indicator -->
+            <div class="lg:hidden flex items-center gap-2">
+              <div
+                class="w-8 h-8 rounded-lg bg-forest-500 text-white flex items-center justify-center"
+              >
+                <i data-lucide="apple" class="w-4 h-4"></i>
+              </div>
+              <span class="font-display font-bold text-lg text-forest-900"
+                >Fruit<span class="text-accent-orange">Lens</span></span
+              >
+            </div>
+
+            <h2
+              id="page-header-title"
+              class="hidden lg:block font-display font-bold text-2xl text-forest-900"
+            >
+              Dashboard Overview
+            </h2>
+          </div>
+
+          <!-- Right Tools -->
+          <div class="flex items-center gap-3 lg:gap-5">
+            <div class="relative hidden sm:block w-64">
+              <i
+                data-lucide="search"
+                class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+              ></i>
+              <input
+                id="global-search"
+                type="text"
+                placeholder="Search fruit guides..."
+                class="w-full bg-cream/80 border border-forest-100 rounded-full pl-10 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-forest-500/30"
+              />
+            </div>
+            <button
+              onclick="newScan()"
+              class="flex items-center gap-2 bg-forest-500 hover:bg-forest-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-md shadow-forest-500/20 transition duration-200"
+            >
+              <i data-lucide="scan" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Quick Scan</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- DASHBOARD CONTENT AREA (SCROLLABLE) -->
+        <main
+          class="app-main flex-1 overflow-y-auto p-4 lg:p-8 space-y-8 lg:pb-10"
+        >
+          <!-- 1. DASHBOARD PAGE -->
+          <section id="page-dashboard" class="page-content active space-y-6">
+            <!-- Welcome & Quick Action Card -->
+            <div
+              class="relative overflow-hidden rounded-xl3 bg-gradient-to-r from-forest-900 via-forest-800 to-forest-500 p-6 lg:p-8 text-white shadow-xl"
+            >
+              <!-- Decorative bg shapes -->
+              <div
+                class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/5 blur-2xl pointer-events-none"
+              ></div>
+              <div
+                class="absolute right-40 top-0 w-32 h-32 rounded-full bg-accent-orange/10 blur-xl pointer-events-none"
+              ></div>
+
+              <div
+                class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+              >
+                <div class="space-y-2 max-w-xl">
+                  <span
+                    class="bg-sage-500/30 text-sage-300 text-xs font-medium px-3 py-1 rounded-full border border-sage-300/20 inline-flex items-center gap-1.5"
+                  >
+                    <i
+                      data-lucide="sparkles"
+                      class="w-3.5 h-3.5 text-accent-orange"
+                    ></i>
+                    Computer Vision Active
+                  </span>
+                  <h2
+                    class="font-display text-2xl lg:text-3xl font-bold text-cream"
+                  >
+                    <span id="greeting">Hello</span>! Ready to check your
+                    fruits?
+                  </h2>
+                  <p class="text-sage-100 text-sm opacity-90">
+                    Upload or snap a photo of Papayas, Tomatoes, Oranges,
+                    Bananas, or Rambutans for real-time freshness & shelf-life
+                    prediction.
+                  </p>
+                </div>
+
+                <button
+                  onclick="newScan()"
+                  class="group flex items-center justify-center gap-3 bg-accent-orange hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl2 shadow-lg shadow-accent-orange/30 transition transform hover:-translate-y-0.5"
+                >
+                  <div
+                    class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition"
+                  >
+                    <i data-lucide="camera" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-base">Scan a Fruit Now</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Statistics Bar -->
+            <div
+              id="stat-cards"
+              class="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            ></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div
+                class="bg-white rounded-xl2 border border-forest-100 shadow-sm p-6 flex flex-col justify-between"
+              >
+                <div class="mb-4">
+                  <h3 class="font-display font-bold text-lg text-forest-900">
+                    Condition Distribution
+                  </h3>
+                  <p class="text-xs text-gray-500">Across all saved scans</p>
+                </div>
+                <div class="relative w-48 h-48 mx-auto my-2">
+                  <canvas id="conditionChart"></canvas>
+                  <div
+                    class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none"
+                  >
+                    <span
+                      id="chart-total"
+                      class="text-2xl font-bold font-display text-forest-900"
+                      >0</span
+                    >
+                    <span
+                      class="text-[10px] text-gray-400 font-medium uppercase tracking-wider"
+                      >Scans</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="grid grid-cols-3 gap-2 text-center pt-4 border-t border-gray-100 text-xs"
+                >
+                  <div>
+                    <span
+                      class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 mr-1"
+                    ></span
+                    ><span class="text-gray-600">Unripe</span>
+                    <p id="pct-unripe" class="font-bold text-forest-900 mt-0.5">
+                      0%
+                    </p>
+                  </div>
+                  <div>
+                    <span
+                      class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"
+                    ></span
+                    ><span class="text-gray-600">Ripe</span>
+                    <p id="pct-ripe" class="font-bold text-forest-900 mt-0.5">
+                      0%
+                    </p>
+                  </div>
+                  <div>
+                    <span
+                      class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-1"
+                    ></span
+                    ><span class="text-gray-600">Rotten</span>
+                    <p id="pct-rotten" class="font-bold text-forest-900 mt-0.5">
+                      0%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="lg:col-span-2 bg-white rounded-xl2 border border-forest-100 shadow-sm p-6"
+              >
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="font-display font-bold text-lg text-forest-900">
+                      Recent Scans
+                    </h3>
+                    <p class="text-xs text-gray-500">
+                      Latest classifications from your camera and uploads
+                    </p>
+                  </div>
+                  <button
+                    onclick="switchTab('history')"
+                    class="text-xs font-semibold text-forest-500 hover:text-forest-800 flex items-center gap-1"
+                  >
+                    View All
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+                <div id="recent-scans" class="space-y-3"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display font-bold text-xl text-forest-900">
+                  Supported Fruit Models
+                </h3>
+                <button
+                  onclick="switchTab('library')"
+                  class="text-xs font-semibold text-forest-500 hover:text-forest-800"
+                >
+                  View Full Library →
+                </button>
+              </div>
+              <div
+                id="dash-fruits"
+                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+              ></div>
+            </div>
+          </section>
+
+          <!-- 2. SCANNER WORKSPACE PAGE -->
+          <section id="page-scan" class="page-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div
+                class="lg:col-span-7 bg-white p-6 rounded-xl3 border border-forest-100 shadow-md flex flex-col items-center"
+              >
+                <div class="w-full flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <span
+                      id="cam-dot"
+                      class="w-3 h-3 rounded-full bg-gray-300"
+                    ></span>
+                    <span
+                      id="cam-status"
+                      class="text-xs font-semibold uppercase tracking-wider text-forest-800"
+                      >Ready to scan</span
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    onclick="resetScan()"
+                    class="px-3 py-1.5 rounded-lg bg-cream hover:bg-forest-50 text-forest-800 text-xs font-medium border border-forest-100 flex items-center gap-1"
+                  >
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                  </button>
+                </div>
+                <!-- Camera Viewport Box -->
+                <div
+                  class="relative w-full aspect-square max-w-md bg-forest-900 rounded-xl2 overflow-hidden shadow-inner flex items-center justify-center border-4 border-forest-800 scanner-active-border"
+                >
+                  <!-- Scanning Grid Overlay -->
+                  <div
+                    class="absolute inset-0 bg-[radial-gradient(#2d5a43_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"
+                  ></div>
+
+                  <!-- Scanning Corner Markers -->
+                  <div
+                    class="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-accent-orange rounded-tl-lg"
+                  ></div>
+                  <div
+                    class="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-accent-orange rounded-tr-lg"
+                  ></div>
+                  <div
+                    class="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-accent-orange rounded-bl-lg"
+                  ></div>
+                  <div
+                    class="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-accent-orange rounded-br-lg"
+                  ></div>
+
+                  <!-- Dynamic Scanning Line -->
+                  <div
+                    id="scanner-line"
+                    class="hidden absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent-orange to-transparent animate-scan shadow-[0_0_15px_#e67e22] z-20"
+                  ></div>
+
+                  <!-- Image / Camera Preview Placeholder -->
+                  <div
+                    id="preview-container"
+                    class="relative w-full h-full flex flex-col items-center justify-center text-center p-6 text-sage-300"
+                  >
+                    <video
+                      id="camera-video"
+                      autoplay
+                      playsinline
+                      muted
+                      class="hidden w-full h-full object-cover"
+                    ></video>
+
+                    <canvas id="camera-canvas" class="hidden"></canvas>
+                    <img
+                      id="scanned-image-preview"
+                      src=""
+                      class="hidden w-full h-full object-cover"
+                      alt="Fruit Preview"
+                    />
+
+                    <div id="camera-placeholder" class="space-y-3">
+                      <div
+                        class="w-16 h-16 mx-auto rounded-full bg-forest-800 flex items-center justify-center text-sage-300 border border-sage-500/30"
+                      >
+                        <i data-lucide="camera" class="w-8 h-8"></i>
+                      </div>
+                      <p class="text-sm font-medium text-cream">
+                        Position fruit within center target
+                      </p>
+                      <p class="text-xs text-sage-300">
+                        Select the fruit type before scanning.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Analyzing Loading Overlay -->
+                  <div
+                    id="analyzing-overlay"
+                    class="hidden absolute inset-0 bg-forest-900/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-white space-y-4 p-6"
+                  >
+                    <div class="relative w-16 h-16">
+                      <div
+                        class="w-16 h-16 rounded-full border-4 border-sage-500/30 border-t-accent-orange animate-spin"
+                      ></div>
+                      <i
+                        data-lucide="cpu"
+                        class="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-orange"
+                      ></i>
+                    </div>
+                    <div class="text-center space-y-1">
+                      <h4 class="font-display font-bold text-lg text-cream">
+                        Analyzing your fruit...
+                      </h4>
+                      <p id="analyzing-sub" class="text-xs text-sage-300">
+                        Running the ripeness model
+                      </p>
+                    </div>
+                    <div
+                      class="w-48 bg-forest-800 h-1.5 rounded-full overflow-hidden"
+                    >
+                      <div
+                        class="bg-accent-orange h-full w-3/4 animate-pulse"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="w-full max-w-md mt-6">
+                  <label
+                    for="fruit-select"
+                    class="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-2"
+                    >Select Fruit</label
+                  >
+                  <select
+                    id="fruit-select"
+                    class="w-full bg-white border border-forest-100 rounded-xl px-4 py-3 text-sm font-semibold text-forest-900 focus:outline-none focus:ring-2 focus:ring-forest-500/30"
+                  >
+                    <option value="">-- Choose a fruit --</option>
+                    <option value="banana">Banana</option>
+                    <option value="orange">Orange</option>
+                    <option value="papaya">Papaya</option>
+                    <option value="rambutan">Rambutan</option>
+                    <option value="tomato">Tomato</option>
+                  </select>
+                </div>
+                <div
+                  class="w-full max-w-md mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                >
+                  <label
+                    class="cursor-pointer bg-cream hover:bg-forest-50 text-forest-900 font-semibold py-3 px-4 rounded-xl border border-forest-100 flex items-center justify-center gap-2 text-xs transition"
+                  >
+                    <i data-lucide="upload" class="w-4 h-4 text-forest-500"></i
+                    ><span>Upload Image</span>
+                    <input
+                      type="file"
+                      id="file-input"
+                      accept="image/*"
+                      onchange="handleFileUpload(event)"
+                      class="hidden"
+                    />
+                  </label>
+                  <button
+                    id="btn-camera"
+                    type="button"
+                    onclick="startCamera()"
+                    class="w-full bg-forest-500 hover:bg-forest-800 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-xs"
+                  >
+                    <i data-lucide="camera" class="w-4 h-4"></i
+                    ><span>Open Camera</span>
+                  </button>
+                  <button
+                    id="btn-take-photo"
+                    type="button"
+                    onclick="takePhoto()"
+                    class="hidden sm:col-span-2 w-full bg-accent-green hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl text-xs"
+                  >
+                    Take Photo
+                  </button>
+                  <input
+                    type="file"
+                    id="capture-input"
+                    accept="image/*"
+                    capture="environment"
+                    onchange="handleCaptureInput(event)"
+                    class="hidden"
+                  />
+                  <button
+                    id="btn-capture"
+                    type="button"
+                    onclick="triggerScanProcess()"
+                    class="sm:col-span-2 w-full bg-accent-orange hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-accent-orange/30 flex items-center justify-center gap-2 text-xs transition"
+                  >
+                    <i data-lucide="scan" class="w-4 h-4"></i
+                    ><span>Capture &amp; Analyze</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="lg:col-span-5 space-y-6">
+                <div
+                  class="bg-white p-6 rounded-xl3 border border-forest-100 shadow-sm space-y-4"
+                >
+                  <h3
+                    class="font-display font-bold text-lg text-forest-900 flex items-center gap-2"
+                  >
+                    <i
+                      data-lucide="help-circle"
+                      class="w-5 h-5 text-forest-500"
+                    ></i>
+                    Scan Guidelines
+                  </h3>
+                  <div class="space-y-3">
+                    <div class="flex gap-3 items-start">
+                      <span
+                        class="w-6 h-6 rounded-full bg-forest-50 text-forest-800 text-xs font-bold flex items-center justify-center shrink-0"
+                        >1</span
+                      >
+                      <div>
+                        <h5 class="text-xs font-bold text-forest-900">
+                          Pick the right fruit first
+                        </h5>
+                        <p class="text-xs text-gray-500">
+                          Each fruit has its own model, so choosing the wrong
+                          type gives a wrong answer.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex gap-3 items-start">
+                      <span
+                        class="w-6 h-6 rounded-full bg-forest-50 text-forest-800 text-xs font-bold flex items-center justify-center shrink-0"
+                        >2</span
+                      >
+                      <div>
+                        <h5 class="text-xs font-bold text-forest-900">
+                          Centre a single fruit
+                        </h5>
+                        <p class="text-xs text-gray-500">
+                          The photo is centre-cropped to a square, so keep the
+                          fruit in the middle.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex gap-3 items-start">
+                      <span
+                        class="w-6 h-6 rounded-full bg-forest-50 text-forest-800 text-xs font-bold flex items-center justify-center shrink-0"
+                        >3</span
+                      >
+                      <div>
+                        <h5 class="text-xs font-bold text-forest-900">
+                          Good light, plain background
+                        </h5>
+                        <p class="text-xs text-gray-500">
+                          Avoid harsh shadows. A neutral surface helps the model
+                          focus on the fruit.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="bg-cream p-5 rounded-xl2 border border-forest-100 space-y-3"
+                >
+                  <div class="flex items-center justify-between">
+                    <h4
+                      class="text-xs font-bold uppercase tracking-wider text-forest-800"
+                    >
+                      Your latest scans
+                    </h4>
+                    <button
+                      onclick="switchTab('history')"
+                      class="text-[11px] font-semibold text-forest-500 hover:text-forest-800"
+                    >
+                      View all
+                    </button>
+                  </div>
+                  <div id="scan-recent" class="space-y-2"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. ANALYSIS RESULT DASHBOARD PAGE -->
+          <section id="page-result" class="page-content space-y-6">
+            <!-- Top Result Hero Banner -->
+            <div
+              class="bg-white p-6 lg:p-8 rounded-xl3 border border-forest-100 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between"
+            >
+              <div class="flex items-center gap-6">
+                <div
+                  class="relative w-28 h-28 lg:w-32 lg:h-32 rounded-xl2 overflow-hidden border-2 border-forest-100 shadow-md shrink-0"
+                >
+                  <img
+                    id="res-image"
+                    src="https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&q=80&w=300"
+                    class="w-full h-full object-cover"
+                    alt="Detected Fruit"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span
+                      id="res-badge-condition"
+                      class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800"
+                    >
+                      Ripe Condition
+                    </span>
+                    <span
+                      id="res-id"
+                      class="text-xs font-semibold text-gray-400"
+                    ></span>
+                  </div>
+                  <h2
+                    id="res-fruit-name"
+                    class="font-display text-3xl font-bold text-forest-900"
+                  >
+                    Banana (Cavendish)
+                  </h2>
+                  <p class="text-xs text-gray-500 flex items-center gap-2">
+                    <i
+                      data-lucide="shield-check"
+                      class="w-4 h-4 text-forest-500"
+                    ></i>
+                    Classification Confidence:
+                    <span id="res-confidence" class="font-bold text-forest-900"
+                      >96.8%</span
+                    >
+                  </p>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                <button
+                  onclick="newScan()"
+                  class="flex-1 md:flex-none px-4 py-2.5 rounded-xl border border-forest-100 hover:bg-cream text-forest-900 text-xs font-bold flex items-center justify-center gap-1.5"
+                >
+                  <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Scan Another
+                </button>
+                <button
+                  id="res-guide-btn"
+                  class="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-forest-500 hover:bg-forest-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md"
+                >
+                  <i data-lucide="book-open" class="w-4 h-4"></i> Fruit Guide
+                </button>
+                <button
+                  onclick="deleteCurrent()"
+                  class="px-3 py-2.5 rounded-xl border border-red-100 hover:bg-red-50 text-accent-red text-xs font-bold flex items-center justify-center gap-1.5"
+                  title="Delete this record"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="res-warning"
+              class="hidden p-4 rounded-xl2 bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2"
+            >
+              <i
+                data-lucide="alert-triangle"
+                class="w-4 h-4 shrink-0 mt-0.5"
+              ></i>
+              <span
+                >The model is not very sure about this photo. Retake it in
+                better light with a plain background, and make sure the selected
+                fruit matches the photo.</span
+              >
+            </div>
+
+            <!-- Middle Metrics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- Circular Freshness Meter Card -->
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm flex flex-col items-center justify-center text-center"
+              >
+                <h4
+                  class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
+                >
+                  Freshness Index
+                </h4>
+                <div
+                  class="relative w-32 h-32 flex items-center justify-center"
+                >
+                  <svg
+                    class="w-full h-full transform -rotate-90"
+                    viewBox="0 0 36 36"
+                  >
+                    <path
+                      class="text-gray-100"
+                      stroke-width="3.5"
+                      stroke="currentColor"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      id="res-meter-arc"
+                      class="text-accent-green transition-all duration-1000 ease-out"
+                      stroke-dasharray="88, 100"
+                      stroke-width="3.5"
+                      stroke-linecap="round"
+                      stroke="currentColor"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span
+                    id="res-freshness-score"
+                    class="absolute font-display font-extrabold text-3xl text-forest-900"
+                    >88%</span
+                  >
+                </div>
+                <p
+                  id="res-freshness-label"
+                  class="text-xs font-bold text-emerald-800 mt-2"
+                >
+                  Optimal Peak Freshness
+                </p>
+              </div>
+
+              <!-- Est. Ripening -->
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm flex flex-col justify-between"
+              >
+                <div class="flex items-center justify-between">
+                  <span
+                    class="text-xs font-bold text-gray-400 uppercase tracking-wider"
+                    >Ripening Time</span
+                  >
+                  <div
+                    class="w-8 h-8 rounded-lg bg-amber-50 text-accent-amber flex items-center justify-center"
+                  >
+                    <i data-lucide="sun" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3
+                    id="res-ripen-time"
+                    class="font-display text-2xl font-bold text-forest-900"
+                  >
+                    0 Days
+                  </h3>
+                  <p id="res-ripen-note" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+                <div
+                  class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden"
+                >
+                  <div
+                    id="res-ripen-bar"
+                    class="bg-accent-amber h-full transition-all duration-700"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Est. Spoilage -->
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm flex flex-col justify-between"
+              >
+                <div class="flex items-center justify-between">
+                  <span
+                    class="text-xs font-bold text-gray-400 uppercase tracking-wider"
+                    >Estimated Shelf Life</span
+                  >
+                  <div
+                    class="w-8 h-8 rounded-lg bg-red-50 text-accent-red flex items-center justify-center"
+                  >
+                    <i data-lucide="hourglass" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3
+                    id="res-spoil-time"
+                    class="font-display text-2xl font-bold text-forest-900"
+                  >
+                    3-5 Days
+                  </h3>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Before quality degradation begins
+                  </p>
+                </div>
+                <div
+                  class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden"
+                >
+                  <div
+                    id="res-spoil-bar"
+                    class="bg-accent-red h-full transition-all duration-700"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Preferred Storage -->
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm flex flex-col justify-between"
+              >
+                <div class="flex items-center justify-between">
+                  <span
+                    class="text-xs font-bold text-gray-400 uppercase tracking-wider"
+                    >Recommended Temp</span
+                  >
+                  <div
+                    class="w-8 h-8 rounded-lg bg-emerald-50 text-accent-green flex items-center justify-center"
+                  >
+                    <i data-lucide="thermometer" class="w-4 h-4"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3
+                    id="res-storage-temp"
+                    class="font-display text-2xl font-bold text-forest-900"
+                  >
+                    12°C - 15°C
+                  </h3>
+                  <p id="res-storage-place" class="text-xs text-gray-500 mt-1">
+                    Cool, dry pantry counter
+                  </p>
+                </div>
+                <div
+                  class="text-[11px] text-forest-500 font-semibold flex items-center gap-1"
+                >
+                  <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                  <span id="res-ethylene"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stage timeline + model probabilities -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div
+                class="bg-white rounded-xl2 border border-forest-100 shadow-sm p-6 space-y-4"
+              >
+                <h4
+                  class="text-xs font-bold text-forest-900 uppercase tracking-wider"
+                >
+                  Ripening Lifecycle Stage
+                </h4>
+                <div
+                  id="res-timeline"
+                  class="relative flex items-center justify-between py-4 px-2"
+                ></div>
+              </div>
+              <div
+                class="bg-white rounded-xl2 border border-forest-100 shadow-sm p-6 space-y-4"
+              >
+                <h4
+                  class="text-xs font-bold text-forest-900 uppercase tracking-wider"
+                >
+                  Model Probabilities
+                </h4>
+                <div id="res-probs" class="space-y-3"></div>
+              </div>
+            </div>
+
+            <!-- Smart Action Recommendations -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-3"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-forest-50 text-forest-500 flex items-center justify-center"
+                >
+                  <i data-lucide="archive" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Storage Protocol
+                </h4>
+                <p
+                  id="res-rec-storage"
+                  class="text-xs text-gray-600 leading-relaxed"
+                >
+                  Keep away from ethylene-sensitive crops. Wrap stems in foil to
+                  slow down gas release.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-3"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-amber-50 text-accent-amber flex items-center justify-center"
+                >
+                  <i data-lucide="clock" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Consumption Window
+                </h4>
+                <p
+                  id="res-rec-consume"
+                  class="text-xs text-gray-600 leading-relaxed"
+                >
+                  Best eaten raw within the next 48 hours for maximum Vitamin B6
+                  & C absorption.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-3"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-emerald-50 text-accent-green flex items-center justify-center"
+                >
+                  <i data-lucide="utensils" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Culinary Suggestion
+                </h4>
+                <p
+                  id="res-rec-culinary"
+                  class="text-xs text-gray-600 leading-relaxed"
+                >
+                  Ideal for breakfast oatmeal, fresh smoothies, or baking banana
+                  bread if spots appear.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. FRUIT LIBRARY PAGE -->
+          <section id="page-library" class="page-content space-y-6">
+            <div
+              class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div>
+                <h2 class="font-display text-2xl font-bold text-forest-900">
+                  Fruit Database &amp; Guides
+                </h2>
+                <p class="text-xs text-gray-500">
+                  Open a fruit to see its ripeness stages and storage advice
+                </p>
+              </div>
+              <div
+                id="lib-filters"
+                class="flex flex-wrap items-center gap-2"
+              ></div>
+            </div>
+            <div
+              id="lib-grid"
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            ></div>
+          </section>
+
+          <!-- 5. ANALYSIS HISTORY PAGE -->
+          <section id="page-history" class="page-content space-y-6">
+            <div
+              class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div>
+                <h2 class="font-display text-2xl font-bold text-forest-900">
+                  Computer Vision Log
+                </h2>
+                <p class="text-xs text-gray-500">
+                  Every scan is saved automatically to your account
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <select
+                  id="hist-fruit"
+                  onchange="loadHistory()"
+                  class="bg-white border border-forest-100 rounded-xl px-3 py-2 text-xs font-semibold text-forest-900"
+                >
+                  <option value="">All fruits</option>
+                  <option value="banana">Banana</option>
+                  <option value="orange">Orange</option>
+                  <option value="papaya">Papaya</option>
+                  <option value="rambutan">Rambutan</option>
+                  <option value="tomato">Tomato</option>
+                </select>
+                <select
+                  id="hist-cond"
+                  onchange="loadHistory()"
+                  class="bg-white border border-forest-100 rounded-xl px-3 py-2 text-xs font-semibold text-forest-900"
+                >
+                  <option value="">All conditions</option>
+                  <option value="Unripe">Unripe</option>
+                  <option value="Ripe">Ripe</option>
+                  <option value="Rotten">Rotten</option>
+                </select>
+                <a
+                  id="hist-export"
+                  href="/api/scans/export.csv"
+                  class="px-3 py-2 rounded-xl bg-cream border border-forest-100 text-xs font-bold text-forest-900 flex items-center gap-1.5"
+                  ><i data-lucide="download" class="w-4 h-4"></i> Export CSV</a
+                >
+              </div>
+            </div>
+            <div
+              class="bg-white rounded-xl2 border border-forest-100 shadow-sm overflow-hidden"
+            >
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr
+                      class="bg-cream/60 border-b border-forest-100 text-[11px] uppercase tracking-wider font-bold text-gray-500"
+                    >
+                      <th class="py-3.5 px-4">Photo</th>
+                      <th class="py-3.5 px-4">Timestamp</th>
+                      <th class="py-3.5 px-4">Fruit</th>
+                      <th class="py-3.5 px-4">Condition</th>
+                      <th class="py-3.5 px-4">Confidence</th>
+                      <th class="py-3.5 px-4">Freshness</th>
+                      <th class="py-3.5 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="hist-body"
+                    class="divide-y divide-gray-100 text-xs"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="page-guide" class="page-content space-y-6">
+            <button
+              onclick="switchTab('library')"
+              class="text-xs font-semibold text-forest-500 hover:text-forest-800 flex items-center gap-1"
+            >
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to
+              library
+            </button>
+            <div id="guide-body" class="space-y-6"></div>
+          </section>
+
+          <!-- 6. RECOMMENDATIONS PAGE -->
+          <section id="page-recommendations" class="page-content space-y-6">
+            <div>
+              <h2 class="font-display text-2xl font-bold text-forest-900">
+                Smart Storage &amp; Waste Reduction
+              </h2>
+              <p class="text-xs text-gray-500">
+                Built from your latest scan of each fruit (last 14 days), plus
+                general storage tips
+              </p>
+            </div>
+            <div>
+              <h3
+                class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3"
+              >
+                For your fruits
+              </h3>
+              <div
+                id="rec-alerts"
+                class="grid grid-cols-1 md:grid-cols-2 gap-6"
+              ></div>
+            </div>
+            <div>
+              <h3
+                class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3"
+              >
+                General tips
+              </h3>
+              <div
+                id="rec-tips"
+                class="grid grid-cols-1 md:grid-cols-2 gap-6"
+              ></div>
+            </div>
+          </section>
+
+          <!-- 7. ABOUT PAGE -->
+          <section id="page-about" class="page-content space-y-6">
+            <div class="bg-forest-900 text-white p-8 rounded-xl3 space-y-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-forest-500 flex items-center justify-center text-cream"
+              >
+                <i data-lucide="aperture" class="w-6 h-6"></i>
+              </div>
+              <h2 class="font-display text-3xl font-bold">
+                About Fruit Lens AI Platform
+              </h2>
+              <p class="text-sage-100 text-sm max-w-2xl leading-relaxed">
+                Fruit Lens is a Computer Vision research prototype developed
+                using Google Teachable Machine image classification algorithms.
+                Designed for agricultural technology education and food waste
+                reduction.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-2"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-forest-50 text-forest-500 flex items-center justify-center mb-3"
+                >
+                  <i data-lucide="eye" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Smart Detection
+                </h4>
+                <p class="text-xs text-gray-500">
+                  Convolutional neural networks trained with Teachable Machine
+                  on your own fruit photo dataset, one model per fruit.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-2"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-forest-50 text-forest-500 flex items-center justify-center mb-3"
+                >
+                  <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Better Storage
+                </h4>
+                <p class="text-xs text-gray-500">
+                  Actionable advice on humidity, temperature, and atmospheric
+                  separation.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-6 rounded-xl2 border border-forest-100 shadow-sm space-y-2"
+              >
+                <div
+                  class="w-10 h-10 rounded-xl bg-forest-50 text-forest-500 flex items-center justify-center mb-3"
+                >
+                  <i data-lucide="leaf" class="w-5 h-5"></i>
+                </div>
+                <h4 class="font-bold text-base text-forest-900">
+                  Less Food Waste
+                </h4>
+                <p class="text-xs text-gray-500">
+                  Extends pantry usage lifecycle and supports compost
+                  redirection.
+                </p>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <nav
+      class="mobile-nav fixed bottom-0 inset-x-0 z-40 bg-forest-900 text-sage-100 justify-around px-1 py-2 border-t border-forest-800"
+    >
+      <button
+        data-tab="dashboard"
+        onclick="switchTab('dashboard')"
+        class="mnav-btn flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>Home
+      </button>
+      <button
+        data-tab="scan"
+        onclick="switchTab('scan')"
+        class="mnav-btn flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="scan" class="w-5 h-5"></i>Scan
+      </button>
+      <button
+        data-tab="library"
+        onclick="switchTab('library')"
+        class="mnav-btn flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="book-open" class="w-5 h-5"></i>Library
+      </button>
+      <button
+        data-tab="history"
+        onclick="switchTab('history')"
+        class="mnav-btn flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="history" class="w-5 h-5"></i>History
+      </button>
+      <button
+        data-tab="recommendations"
+        onclick="switchTab('recommendations')"
+        class="mnav-btn flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="lightbulb" class="w-5 h-5"></i>Tips
+      </button>
+      <button
+        type="button"
+        onclick="toggleUserMenu(event, 'user-menu-m')"
+        class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium"
+      >
+        <i data-lucide="user-circle" class="w-5 h-5"></i>Account
+      </button>
+    </nav>
+    <div
+      id="user-menu-m"
+      class="hidden fixed bottom-16 right-2 w-64 bg-white rounded-xl2 border border-forest-100 shadow-2xl p-2 z-50"
+    >
+      <div class="flex items-center gap-3 px-3 py-2.5 border-b border-gray-100">
+        <div
+          class="w-9 h-9 rounded-full bg-forest-500 text-cream text-sm font-bold flex items-center justify-center shrink-0 overflow-hidden"
+        >
+          <span class="js-user-initial">?</span
+          ><img
+            class="js-user-avatar hidden w-full h-full object-cover"
+            referrerpolicy="no-referrer"
+            alt=""
+          />
+        </div>
+        <div class="min-w-0">
+          <p
+            class="js-user-name text-sm font-bold text-forest-900 truncate"
+          ></p>
+          <p class="js-user-email text-xs text-gray-500 truncate"></p>
+        </div>
+      </div>
+      <p class="js-user-count px-3 pt-2 text-[11px] text-gray-500">
+        0 scans saved
+      </p>
+      <button
+        id="btn-install"
+        type="button"
+        onclick="installApp()"
+        class="hidden w-full mt-1 px-3 py-2.5 rounded-lg text-left text-xs font-semibold text-accent-orange hover:bg-cream items-center gap-2"
+      >
+        <i data-lucide="smartphone" class="w-4 h-4"></i> Install app
+      </button>
+      <button
+        onclick="
+          closeUserMenus();
+          switchTab('about');
+        "
+        class="w-full mt-1 px-3 py-2.5 rounded-lg text-left text-xs font-semibold text-forest-900 hover:bg-cream flex items-center gap-2"
+      >
+        <i data-lucide="info" class="w-4 h-4"></i> About Platform
+      </button>
+      <button
+        onclick="logout()"
+        class="w-full px-3 py-2.5 rounded-lg text-left text-xs font-semibold text-accent-red hover:bg-red-50 flex items-center gap-2"
+      >
+        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+      </button>
+    </div>
+    <div id="toasts" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+      lucide.createIcons();
+
+      // ---------- helpers ----------
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      const TITLES = {
+        dashboard: "Dashboard Overview",
+        scan: "Computer Vision Fruit Scanner",
+        result: "AI Classification Result",
+        library: "Fruit Species Database",
+        guide: "Fruit Guide",
+        history: "Analysis Logs",
+        recommendations: "Smart Storage Recommendations",
+        about: "About Fruit Lens AI",
+      };
+      const COND = {
+        Ripe: {
+          badge: "bg-emerald-100 text-emerald-800",
+          text: "text-emerald-700",
+          meter: "text-accent-green",
+          dot: "bg-accent-green",
+          bar: "bg-emerald-500",
+        },
+        Unripe: {
+          badge: "bg-amber-100 text-amber-800",
+          text: "text-amber-700",
+          meter: "text-accent-amber",
+          dot: "bg-accent-amber",
+          bar: "bg-amber-400",
+        },
+        Rotten: {
+          badge: "bg-red-100 text-red-800",
+          text: "text-red-700",
+          meter: "text-accent-red",
+          dot: "bg-accent-red",
+          bar: "bg-red-500",
+        },
+      };
+      const TINT = {
+        banana: "bg-amber-50",
+        tomato: "bg-red-50",
+        papaya: "bg-orange-50",
+        rambutan: "bg-rose-50",
+        orange: "bg-amber-50",
+      };
+      const CARD = "bg-white rounded-xl2 border border-forest-100 shadow-sm";
+
+      let FRUITS = [],
+        chart = null,
+        activeTab = "dashboard",
+        currentScan = null,
+        cameraStream = null;
+      let libCat = "All",
+        libQuery = "";
+      const scanCache = {};
+
+      async function api(url, opts = {}) {
+        opts.headers = {
+          "X-Requested-With": "fruitlens",
+          ...(opts.headers || {}),
+        };
+        let res;
+        try {
+          res = await fetch(url, opts);
+        } catch (e) {
+          throw new Error("No internet connection. Check your signal and try again.");
+        }
+        if (res.status === 401) {
+          location.href = "/login";
+          throw new Error("Your session has expired. Please sign in again.");
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok)
+          throw new Error(data.error || `Request failed (${res.status})`);
+        return data;
+      }
+
+      function toast(msg, kind = "info") {
+        const colors = {
+          info: "bg-forest-800 text-white",
+          warn: "bg-amber-500 text-white",
+          error: "bg-accent-red text-white",
+          ok: "bg-accent-green text-white",
+        };
+        const el = document.createElement("div");
+        el.className = `toast px-4 py-3 rounded-xl shadow-lg text-xs font-semibold max-w-xs ${colors[kind] || colors.info}`;
+        el.textContent = msg;
+        $("toasts").appendChild(el);
+        setTimeout(() => el.remove(), 4200);
+      }
+
+      function fmtDate(s) {
+        if (!s) return "";
+        const d = new Date(s.replace(" ", "T"));
+        if (isNaN(d)) return s;
+        const time = d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        const days = Math.round(
+          (new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) /
+            864e5,
+        );
+        if (days === 0) return `Today, ${time}`;
+        if (days === 1) return `Yesterday, ${time}`;
+        return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, ${time}`;
+      }
+
+      const badge = (c) =>
+        `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${COND[c].badge}">${c}</span>`;
+      const thumb = (s, cls) =>
+        s.image_url
+          ? `<img src="${esc(s.image_url)}" class="${cls}" alt="${esc(s.fruit_name)}" onerror="this.style.visibility='hidden'">`
+          : `<div class="${cls} bg-cream"></div>`;
+      const empty = (
+        icon,
+        title,
+        text,
+      ) => `<div class="text-center py-8 text-gray-500 col-span-full">
+            <div class="w-12 h-12 mx-auto rounded-full bg-cream flex items-center justify-center mb-3"><i data-lucide="${icon}" class="w-5 h-5 text-forest-500"></i></div>
+            <p class="text-sm font-semibold text-forest-900">${title}</p><p class="text-xs mt-1">${text}</p>
+            <button onclick="newScan()" class="mt-4 px-4 py-2 rounded-xl bg-forest-500 hover:bg-forest-800 text-white text-xs font-bold">Scan a fruit</button></div>`;
+
+      const scanRow = (s) => `
+            <div onclick="location.hash='#result/${s.id}'" class="flex items-center justify-between p-3 rounded-xl bg-cream/60 hover:bg-cream border border-forest-100/60 transition cursor-pointer">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    ${thumb(s, "w-12 h-12 rounded-lg object-cover shrink-0")}
+                    <div class="min-w-0"><h4 class="font-bold text-sm text-forest-900 truncate">${esc(s.fruit_name)}</h4><p class="text-xs text-gray-500">${fmtDate(s.created_at)}</p></div>
+                </div>
+                <div class="text-right shrink-0 ml-3">${badge(s.condition)}<p class="text-[11px] text-gray-500 mt-0.5">Freshness ${s.freshness}%</p></div>
+            </div>`;
+
+      // ---------- routing (hash based: back button + shareable links) ----------
+      function switchTab(tab) {
+        location.hash = "#" + tab;
+      }
+
+      function show(tab, navTab = tab) {
+        activeTab = tab;
+        document
+          .querySelectorAll(".page-content")
+          .forEach((p) => p.classList.remove("active"));
+        const page = $("page-" + tab);
+        if (page) page.classList.add("active");
+        document.querySelectorAll(".nav-btn").forEach((b) => {
+          b.classList.remove("bg-forest-800", "text-cream");
+          b.classList.add("text-sage-100");
+        });
+        const nav = $("nav-" + navTab);
+        if (nav) {
+          nav.classList.add("bg-forest-800", "text-cream");
+          nav.classList.remove("text-sage-100");
+        }
+        document.querySelectorAll(".mnav-btn").forEach((b) => {
+          const on = b.dataset.tab === navTab;
+          b.classList.toggle("text-accent-orange", on);
+          b.classList.toggle("bg-forest-800", on);
+        });
+        $("page-header-title").textContent = TITLES[tab] || "Fruit Lens";
+        document.querySelector("main").scrollTo(0, 0);
+        lucide.createIcons();
+      }
+
+      async function route() {
+        const [tab, arg] = (location.hash.slice(1) || "dashboard").split("/");
+        api("/api/stats")
+          .then((s) => setScanCount(s.total))
+          .catch(() => {});
+        if (tab === "guide" && arg) return showGuide(arg);
+        if (tab === "result" && arg) return showResult(arg);
+        const t =
+          TITLES[tab] && tab !== "guide" && tab !== "result"
+            ? tab
+            : "dashboard";
+        show(t);
+        try {
+          if (t === "dashboard") await loadDashboard();
+          else if (t === "scan") await loadScanRecent();
+          else if (t === "library") {
+            FRUITS = await api("/api/fruits");
+            renderLibrary();
+          } else if (t === "history") await loadHistory();
+          else if (t === "recommendations") await loadRecs();
+        } catch (e) {
+          toast(e.message || "Failed to load data", "error");
+        }
+      }
+
+      // ---------- dashboard ----------
+      function greeting() {
+        const h = new Date().getHours();
+        return h < 11
+          ? "Good Morning"
+          : h < 15
+            ? "Good Afternoon"
+            : "Good Evening";
+      }
+
+      function renderStats(s) {
+        const c = s.by_condition,
+          t = s.total,
+          pct = (n) => (t ? Math.round((n / t) * 100) : 0);
+        let trend = `${s.this_week} this week`;
+        if (s.last_week > 0) {
+          const d = Math.round(
+            ((s.this_week - s.last_week) / s.last_week) * 100,
+          );
+          trend += ` (${d >= 0 ? "+" : ""}${d}%)`;
+        }
+        const cards = [
+          [
+            "scan",
+            "bg-forest-50 text-forest-500",
+            "Total Scanned",
+            t,
+            trend,
+            "text-gray-500",
+          ],
+          [
+            "check-circle",
+            "bg-emerald-50 text-accent-green",
+            "Fresh / Ripe",
+            c.Ripe,
+            `${pct(c.Ripe)}% of scans`,
+            "text-gray-500",
+          ],
+          [
+            "hourglass",
+            "bg-amber-50 text-accent-amber",
+            "Unripe",
+            c.Unripe,
+            `${pct(c.Unripe)}% still maturing`,
+            "text-gray-500",
+          ],
+          [
+            "alert-triangle",
+            "bg-red-50 text-accent-red",
+            "Spoiled",
+            c.Rotten,
+            "Consume or compost",
+            "text-accent-red",
+          ],
+        ];
+        $("stat-cards").innerHTML = cards
+          .map(
+            ([ic, tone, label, val, note, nc]) => `
+                <div class="${CARD} p-5 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl ${tone} flex items-center justify-center shrink-0"><i data-lucide="${ic}" class="w-6 h-6"></i></div>
+                    <div><p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">${label}</p>
+                    <h3 class="text-2xl font-bold font-display text-forest-900">${val}</h3>
+                    <p class="text-[11px] ${nc} font-medium mt-0.5">${note}</p></div>
+                </div>`,
+          )
+          .join("");
+      }
+
+      function renderChart(s) {
+        const c = s.by_condition,
+          t = s.total,
+          pct = (n) => (t ? ((n / t) * 100).toFixed(1) : "0.0");
+        $("chart-total").textContent = t;
+        $("pct-unripe").textContent = pct(c.Unripe) + "%";
+        $("pct-ripe").textContent = pct(c.Ripe) + "%";
+        $("pct-rotten").textContent = pct(c.Rotten) + "%";
+        if (!chart) return;
+        chart.data.labels = t ? ["Unripe", "Ripe", "Rotten"] : ["No data"];
+        chart.data.datasets[0].data = t ? [c.Unripe, c.Ripe, c.Rotten] : [1];
+        chart.data.datasets[0].backgroundColor = t
+          ? ["#f39c12", "#27ae60", "#e74c3c"]
+          : ["#e5e7eb"];
+        chart.update();
+      }
+
+      const fruitChip = (f) => `
+            <div onclick="location.hash='#guide/${f.slug}'" class="group cursor-pointer bg-white p-4 rounded-xl2 border border-forest-100 hover:border-sage-300 hover:shadow-md transition text-center">
+                <div class="w-16 h-16 mx-auto rounded-full ${TINT[f.slug] || "bg-cream"} flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                    <img src="${esc(f.image_url)}" class="w-12 h-12 object-cover rounded-full" alt="${esc(f.name)}" onerror="this.style.visibility='hidden'">
+                </div>
+                <h4 class="font-bold text-sm text-forest-900">${esc(f.name)}</h4>
+                <p class="text-[11px] text-gray-500">${f.scan_count} scan${f.scan_count === 1 ? "" : "s"}</p>
+            </div>`;
+
+      async function loadDashboard() {
+        $("greeting").textContent =
+          greeting() + (ME ? ", " + ME.name.split(" ")[0] : "");
+        const [s, scans, fruits] = await Promise.all([
+          api("/api/stats"),
+          api("/api/scans?limit=5"),
+          api("/api/fruits"),
+        ]);
+        FRUITS = fruits;
+        renderStats(s);
+        renderChart(s);
+        $("recent-scans").innerHTML = scans.length
+          ? scans.map(scanRow).join("")
+          : empty(
+              "scan",
+              "No scans yet",
+              "Your classifications will appear here.",
+            );
+        $("dash-fruits").innerHTML = fruits.map(fruitChip).join("");
+        lucide.createIcons();
+      }
+
+      // ---------- library & guide ----------
+      function setLibCat(c) {
+        libCat = c;
+        renderLibrary();
+      }
+
+      function renderLibrary() {
+        const cats = ["All", ...new Set(FRUITS.map((f) => f.category))];
+        $("lib-filters").innerHTML = cats
+          .map(
+            (c) =>
+              `<button onclick="setLibCat('${esc(c)}')" class="px-3 py-1.5 rounded-lg text-xs font-medium ${c === libCat ? "bg-forest-800 text-white" : "bg-white border border-forest-100 text-gray-600 hover:bg-cream"}">${esc(c)}</button>`,
+          )
+          .join("");
+        const q = libQuery.trim().toLowerCase();
+        const list = FRUITS.filter(
+          (f) =>
+            (libCat === "All" || f.category === libCat) &&
+            (!q ||
+              [f.name, f.category, f.scientific, f.description]
+                .join(" ")
+                .toLowerCase()
+                .includes(q)),
+        );
+        $("lib-grid").innerHTML = list.length
+          ? list
+              .map(
+                (f) => `
+                <div onclick="location.hash='#guide/${f.slug}'" class="cursor-pointer ${CARD} overflow-hidden hover:shadow-md transition flex flex-col justify-between">
+                    <div class="relative h-48 ${TINT[f.slug] || "bg-cream"}">
+                        <img src="${esc(f.image_url)}" class="w-full h-full object-cover" alt="${esc(f.name)}" onerror="this.style.visibility='hidden'">
+                        <span class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-forest-900">${f.scan_count} scan${f.scan_count === 1 ? "" : "s"}</span>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div><h3 class="font-display font-bold text-xl text-forest-900">${esc(f.name)}</h3><p class="text-[11px] italic text-gray-400">${esc(f.scientific)} · ${esc(f.category)}</p></div>
+                        <p class="text-xs text-gray-500 line-clamp-2">${esc(f.description)}</p>
+                        <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Ripening: <strong class="text-forest-900">${esc(f.ripen_duration)}</strong></span>
+                            <span class="font-bold text-forest-500">View Guide →</span>
+                        </div>
+                    </div>
+                </div>`,
+              )
+              .join("")
+          : `<p class="text-sm text-gray-500 col-span-full">No fruit matches "${esc(libQuery)}".</p>`;
+      }
+
+      async function showGuide(slug) {
+        show("guide", "library");
+        $("guide-body").innerHTML =
+          '<p class="text-sm text-gray-500">Loading...</p>';
+        try {
+          renderGuide(await api("/api/fruits/" + encodeURIComponent(slug)));
+        } catch (e) {
+          $("guide-body").innerHTML =
+            `<p class="text-sm text-accent-red">${esc(e.message)}</p>`;
+        }
+        lucide.createIcons();
+      }
+
+      function renderGuide(f) {
+        const fact = (label, val) =>
+          `<div class="bg-cream/70 rounded-xl p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${label}</p><p class="text-xs font-semibold text-forest-900 mt-1">${esc(val)}</p></div>`;
+        const part = (label, text) =>
+          `<div><p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${label}</p><p class="text-xs text-gray-600 leading-relaxed mt-0.5">${esc(text)}</p></div>`;
+        const condCards = f.conditions
+          .map(
+            (c) => `
+                <div class="${CARD} p-5 space-y-3">
+                    <div class="flex items-center justify-between">${badge(c.condition)}<span class="text-[11px] font-semibold text-gray-500">${esc(c.freshness_label)}</span></div>
+                    <div class="grid grid-cols-2 gap-2">${fact("Ripens in", c.ripen_time)}${fact("Shelf life", c.spoil_time)}</div>
+                    ${part("Storage", c.storage)}${part("Eating", c.consume)}${part("Cooking", c.culinary)}
+                </div>`,
+          )
+          .join("");
+        const total = Object.values(f.counts).reduce((a, b) => a + b, 0);
+        $("guide-body").innerHTML = `
+                <div class="${CARD} p-6 flex flex-col md:flex-row gap-6">
+                    <div class="w-full md:w-72 h-56 rounded-xl2 overflow-hidden ${TINT[f.slug] || "bg-cream"} shrink-0"><img src="${esc(f.image_url)}" class="w-full h-full object-cover" alt="${esc(f.name)}" onerror="this.style.visibility='hidden'"></div>
+                    <div class="space-y-4 flex-1">
+                        <div><span class="text-[10px] bg-sage-100 text-forest-800 font-bold px-2 py-0.5 rounded">${esc(f.category)}</span>
+                        <h2 class="font-display text-3xl font-bold text-forest-900 mt-2">${esc(f.name)}</h2>
+                        <p class="text-xs italic text-gray-400">${esc(f.scientific)}</p></div>
+                        <p class="text-sm text-gray-600 leading-relaxed">${esc(f.description)}</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${fact("Ripening", f.ripen_duration)}${fact("Storage temp", f.storage_temp)}${fact("Best place", f.storage_place)}${fact("Ethylene", f.ethylene)}</div>
+                        <button onclick="scanFruit('${f.slug}')" class="px-5 py-3 rounded-xl bg-accent-orange hover:bg-orange-600 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-accent-orange/30"><i data-lucide="scan" class="w-4 h-4"></i> Scan a ${esc(f.name)}</button>
+                    </div>
+                </div>
+                <div><h3 class="font-display font-bold text-lg text-forest-900 mb-3">Ripeness stages</h3><div class="grid grid-cols-1 lg:grid-cols-3 gap-6">${condCards}</div></div>
+                <div class="${CARD} p-6">
+                    <h3 class="font-display font-bold text-lg text-forest-900">Your ${esc(f.name)} scans <span class="text-xs font-medium text-gray-400">(${total} total)</span></h3>
+                    <div class="space-y-3 mt-4">${f.recent_scans.length ? f.recent_scans.map(scanRow).join("") : '<p class="text-xs text-gray-500">No scans of this fruit yet.</p>'}</div>
+                </div>`;
+      }
+
+      function scanFruit(slug) {
+        resetScan();
+        $("fruit-select").value = slug;
+        switchTab("scan");
+      }
+      function newScan() {
+        resetScan();
+        switchTab("scan");
+      }
+
+      // ---------- result ----------
+      async function showResult(id) {
+        show("result", "scan");
+        try {
+          const s = scanCache[id] || (await api("/api/scans/" + id));
+          delete scanCache[id];
+          renderResult(s);
+        } catch (e) {
+          toast(e.message, "error");
+          location.hash = "#history";
+        }
+      }
+
+      function renderResult(s) {
+        currentScan = s;
+        const c = COND[s.condition],
+          i = s.info || {},
+          f = s.fruit_info || {};
+        $("res-image").src = s.image_url || "";
+        $("res-id").textContent =
+          `ID: #FL-${String(s.id).padStart(4, "0")} · ${fmtDate(s.created_at)}`;
+        $("res-fruit-name").textContent = s.fruit_name;
+        $("res-confidence").textContent = `${s.confidence}%`;
+        const b = $("res-badge-condition");
+        b.textContent = `${s.condition} Condition`;
+        b.className = `px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide ${c.badge}`;
+        $("res-freshness-score").textContent = `${s.freshness}%`;
+        const lbl = $("res-freshness-label");
+        lbl.textContent = i.freshness_label || "";
+        lbl.className = `text-xs font-bold mt-2 ${c.text}`;
+        const arc = $("res-meter-arc");
+        arc.setAttribute("stroke-dasharray", `${s.freshness}, 100`);
+        arc.setAttribute(
+          "class",
+          `transition-all duration-1000 ease-out ${c.meter}`,
+        );
+        $("res-ripen-time").textContent = i.ripen_time || "-";
+        $("res-ripen-note").textContent = {
+          Ripe: "Already at peak ripeness",
+          Unripe: "Estimated time until ripe",
+          Rotten: "Past the edible stage",
+        }[s.condition];
+        $("res-ripen-bar").style.width = {
+          Unripe: "35%",
+          Ripe: "100%",
+          Rotten: "100%",
+        }[s.condition];
+        $("res-spoil-time").textContent = i.spoil_time || "-";
+        $("res-spoil-bar").style.width = `${s.freshness}%`;
+        $("res-storage-temp").textContent = f.storage_temp || "-";
+        $("res-storage-place").textContent = f.storage_place || "";
+        $("res-ethylene").textContent = f.ethylene || "";
+        $("res-rec-storage").textContent = i.storage || "";
+        $("res-rec-consume").textContent = i.consume || "";
+        $("res-rec-culinary").textContent = i.culinary || "";
+        $("res-warning").classList.toggle("hidden", !s.low_confidence);
+        $("res-guide-btn").onclick = () => {
+          location.hash = "#guide/" + s.fruit;
+        };
+
+        const stages = [
+          [1, "Unripe"],
+          [2, "Ripe"],
+          [3, "Overripe"],
+          [4, "Spoiled"],
+        ];
+        $("res-timeline").innerHTML =
+          '<div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-gray-200 z-0"></div>' +
+          stages
+            .map(([n, name]) => {
+              const cur = n === s.stage;
+              return `<div class="relative z-10 text-center space-y-1">
+                    <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-white ${cur ? c.dot + " text-white shadow-md" : "bg-gray-200 text-gray-500"}">${n}</div>
+                    <span class="text-xs block ${cur ? "font-bold text-forest-900" : "font-semibold text-gray-500"}">${name}${cur ? " (Current)" : ""}</span></div>`;
+            })
+            .join("");
+
+        const probs = [...s.probabilities].sort(
+          (a, b) => b.probability - a.probability,
+        );
+        $("res-probs").innerHTML =
+          probs
+            .map(
+              (p) => `
+                <div><div class="flex justify-between text-xs mb-1"><span class="font-semibold text-forest-900 ">${esc(p.condition)}</span><span class="text-gray-500">${p.probability}%</span></div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div class="${COND[p.condition].bar} h-full" style="width:${p.probability}%"></div></div></div>`,
+            )
+            .join("") +
+          '<p class="text-[11px] text-gray-400 pt-1">The freshness index weights these probabilities by condition, so uncertain photos score between stages.</p>';
+        lucide.createIcons();
+      }
+
+      async function deleteScan(id, after) {
+        if (!confirm("Delete this scan record?")) return;
+        try {
+          await api("/api/scans/" + id, { method: "DELETE" });
+          toast("Record deleted", "ok");
+          after();
+        } catch (e) {
+          toast(e.message, "error");
+        }
+      }
+      function deleteCurrent() {
+        if (currentScan)
+          deleteScan(currentScan.id, () => {
+            location.hash = "#history";
+          });
+      }
+
+      // ---------- history ----------
+      async function loadHistory() {
+        const p = new URLSearchParams();
+        if ($("hist-fruit").value) p.set("fruit", $("hist-fruit").value);
+        if ($("hist-cond").value) p.set("condition", $("hist-cond").value);
+        $("hist-export").href =
+          "/api/scans/export.csv" + (p.toString() ? "?" + p : "");
+        p.set("limit", 200);
+        const scans = await api("/api/scans?" + p);
+        $("hist-body").innerHTML = scans.length
+          ? scans
+              .map(
+                (s) => `
+                <tr class="hover:bg-cream/40">
+                    <td class="py-3 px-4">${thumb(s, "w-10 h-10 rounded-lg object-cover")}</td>
+                    <td class="py-3 px-4 text-gray-500 whitespace-nowrap">${fmtDate(s.created_at)}</td>
+                    <td class="py-3 px-4 font-bold text-forest-900">${esc(s.fruit_name)}</td>
+                    <td class="py-3 px-4">${badge(s.condition)}</td>
+                    <td class="py-3 px-4 font-medium">${s.confidence}%</td>
+                    <td class="py-3 px-4 font-bold ${COND[s.condition].text}">${s.freshness}%</td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                        <button onclick="location.hash='#result/${s.id}'" class="text-forest-500 hover:text-forest-800 font-bold mr-3">View</button>
+                        <button onclick="deleteScan(${s.id}, loadHistory)" class="text-gray-400 hover:text-accent-red" title="Delete"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                    </td>
+                </tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="7" class="py-10 text-center text-gray-500">No scans found. Scan a fruit and it will be saved here automatically.</td></tr>`;
+        lucide.createIcons();
+      }
+
+      // ---------- recommendations ----------
+      async function loadRecs() {
+        const d = await api("/api/recommendations");
+        const pri = {
+          "Act Now": "bg-red-100 text-red-800",
+          "Eat Soon": "bg-emerald-100 text-emerald-800",
+          Wait: "bg-amber-100 text-amber-800",
+          "High Priority": "bg-amber-100 text-amber-800",
+          "Pro Tip": "bg-emerald-100 text-emerald-800",
+          Habit: "bg-sage-100 text-forest-800",
+        };
+        const card = (r) => `
+                <div ${r.scan_id ? `onclick="location.hash='#result/${r.scan_id}'"` : ""} class="${CARD} p-6 space-y-3 ${r.scan_id ? "cursor-pointer hover:shadow-md transition" : ""}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-forest-50 text-forest-500 flex items-center justify-center shrink-0"><i data-lucide="${esc(r.icon)}" class="w-5 h-5"></i></div>
+                        <div><h4 class="font-bold text-base text-forest-900">${esc(r.title)}</h4><span class="text-[10px] font-bold px-2 py-0.5 rounded ${pri[r.priority] || "bg-cream text-forest-800"}">${esc(r.priority)}</span></div>
+                    </div>
+                    <p class="text-xs text-gray-600 leading-relaxed">${esc(r.body)}</p>
+                </div>`;
+        $("rec-alerts").innerHTML = d.alerts.length
+          ? d.alerts.map(card).join("")
+          : empty(
+              "lightbulb",
+              "No personalised advice yet",
+              "Scan a fruit and tailored storage advice will show up here.",
+            );
+        $("rec-tips").innerHTML = d.tips.map(card).join("");
+        lucide.createIcons();
+      }
+
+      // ---------- scanner ----------
+      function setStatus(text, state) {
+        $("cam-status").textContent = text;
+        $("cam-dot").className =
+          `w-3 h-3 rounded-full ${state === "live" ? "bg-accent-green animate-pulse" : state === "ready" ? "bg-accent-orange" : "bg-gray-300"}`;
+      }
+
+      function showPreview(url) {
+        const preview = $("scanned-image-preview");
+        preview.src = url;
+        preview.classList.remove("hidden");
+        $("camera-placeholder").classList.add("hidden");
+      }
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        stopCamera();
+        showPreview(URL.createObjectURL(file));
+        setStatus("Image loaded", "ready");
+      }
+
+      // On a phone the built-in camera app is used: sharper photos, working autofocus, no repeated permission
+      // prompts, and it also works on plain http:// addresses. Desktops keep the live in-page camera.
+      const IS_PHONE = window.matchMedia("(pointer: coarse)").matches;
+
+      function openNativeCamera() {
+        $("capture-input").click();
+      }
+
+      function handleCaptureInput(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        stopCamera();
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        $("file-input").files = dt.files; // the scan always reads the photo from #file-input
+        event.target.value = "";
+        showPreview(URL.createObjectURL(file));
+        setStatus("Photo captured", "ready");
+      }
+
+      async function startCamera() {
+        if (IS_PHONE) {
+          openNativeCamera();
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          toast("The live camera is not available here. Use Upload Image instead.", "warn");
+          return;
+        }
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+          const video = $("camera-video");
+          video.srcObject = cameraStream;
+          video.classList.remove("hidden");
+          $("btn-take-photo").classList.remove("hidden");
+          $("camera-placeholder").classList.add("hidden");
+          $("scanned-image-preview").classList.add("hidden");
+          setStatus("Camera live", "live");
+        } catch (error) {
+          console.error(error);
+          toast(`Could not use the camera: ${error.message}`, "error");
+          if (IS_PHONE) openNativeCamera();
+        }
+      }
+
+      function takePhoto() {
+        const video = $("camera-video"),
+          canvas = $("camera-canvas");
+        if (!video.videoWidth || !video.videoHeight) {
+          toast("The camera is not ready yet.", "warn");
+          return;
+        }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas
+          .getContext("2d")
+          .drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            const dt = new DataTransfer();
+            dt.items.add(
+              new File([blob], "camera-photo.jpg", { type: "image/jpeg" }),
+            );
+            $("file-input").files = dt.files;
+            stopCamera();
+            showPreview(URL.createObjectURL(blob));
+            setStatus("Photo captured", "ready");
+          },
+          "image/jpeg",
+          0.92,
+        );
+      }
+
+      function stopCamera() {
+        if (cameraStream) {
+          cameraStream.getTracks().forEach((t) => t.stop());
+          cameraStream = null;
+        }
+        $("camera-video").srcObject = null;
+        $("camera-video").classList.add("hidden");
+        $("btn-take-photo").classList.add("hidden");
+      }
+
+      function resetScan() {
+        stopCamera();
+        $("file-input").value = "";
+        const preview = $("scanned-image-preview");
+        preview.removeAttribute("src");
+        preview.classList.add("hidden");
+        $("camera-placeholder").classList.remove("hidden");
+        setStatus("Ready to scan", "idle");
+      }
+
+      function setBusy(on) {
+        $("analyzing-overlay").classList.toggle("hidden", !on);
+        $("scanner-line").classList.toggle("hidden", !on);
+        $("btn-capture").disabled = on;
+        if (on)
+          $("analyzing-sub").textContent =
+            `Running the ${$("fruit-select").value} ripeness model`;
+      }
+
+      // Phone photos are often 5-15 MB. The model only needs ~224 px, so shrink to 1280 px JPEG first:
+      // much faster on mobile data and never hits the server's 12 MB limit. Falls back to the original file.
+      async function shrinkImage(file, maxSide = 1280) {
+        try {
+          if (!file.type.startsWith("image/") || typeof createImageBitmap !== "function") return file;
+          const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+          const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+          if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
+            bmp.close();
+            return file;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(bmp.width * scale);
+          canvas.height = Math.round(bmp.height * scale);
+          canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+          bmp.close();
+          const blob = await new Promise((ok) => canvas.toBlob(ok, "image/jpeg", 0.88));
+          return blob && blob.size < file.size ? new File([blob], "scan.jpg", { type: "image/jpeg" }) : file;
+        } catch (e) {
+          return file;
+        }
+      }
+
+      async function triggerScanProcess() {
+        const file = $("file-input").files[0],
+          fruit = $("fruit-select").value;
+        if (!fruit) {
+          toast("Please choose a fruit type first.", "warn");
+          $("fruit-select").focus();
+          return;
+        }
+        if (!file) {
+          toast("Please upload an image or take a photo first.", "warn");
+          return;
+        }
+        setBusy(true);
+        try {
+          const fd = new FormData();
+          fd.append("image", await shrinkImage(file));
+          fd.append("fruit", fruit);
+          const scan = await api("/api/predict", { method: "POST", body: fd });
+          scanCache[scan.id] = scan;
+          resetScan();
+          location.hash = "#result/" + scan.id;
+        } catch (e) {
+          console.error(e);
+          toast(e.message, "error");
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function loadScanRecent() {
+        const scans = await api("/api/scans?limit=4");
+        $("scan-recent").innerHTML = scans.length
+          ? scans
+              .map(
+                (
+                  s,
+                ) => `<div onclick="location.hash='#result/${s.id}'" class="flex items-center justify-between bg-white rounded-lg border border-forest-100 p-2.5 cursor-pointer hover:border-forest-500 text-xs">
+                    <span class="font-semibold text-forest-900">${esc(s.fruit_name)}</span>${badge(s.condition)}</div>`,
+              )
+              .join("")
+          : '<p class="text-xs text-gray-500">Nothing scanned yet.</p>';
+      }
+
+      // ---------- account ----------
+      let ME = null;
+
+      function applyUser() {
+        if (!ME) return;
+        const initial = (ME.name.trim()[0] || "?").toUpperCase();
+        document.querySelectorAll(".js-user-name").forEach((el) => {
+          el.textContent = ME.name;
+        });
+        document.querySelectorAll(".js-user-email").forEach((el) => {
+          el.textContent = ME.email;
+        });
+        document.querySelectorAll(".js-user-initial").forEach((el) => {
+          el.textContent = initial;
+        });
+        document.querySelectorAll(".js-user-avatar").forEach((img) => {
+          if (!ME.avatar_url) return;
+          img.onload = () => {
+            img.classList.remove("hidden");
+            img.previousElementSibling.classList.add("hidden");
+          };
+          img.onerror = () => {
+            img.classList.add("hidden");
+            img.previousElementSibling.classList.remove("hidden");
+          };
+          img.src = ME.avatar_url;
+        });
+        if ($("greeting"))
+          $("greeting").textContent = greeting() + ", " + ME.name.split(" ")[0];
+      }
+
+      function setScanCount(n) {
+        document.querySelectorAll(".js-user-count").forEach((el) => {
+          el.textContent = `${n} scan${n === 1 ? "" : "s"} saved`;
+        });
+      }
+
+      async function loadMe() {
+        ME = await api("/api/auth/me");
+        applyUser();
+      }
+
+      function closeUserMenus() {
+        ["user-menu", "user-menu-m"].forEach((id) =>
+          $(id).classList.add("hidden"),
+        );
+      }
+      function toggleUserMenu(e, id) {
+        e.stopPropagation();
+        const wasHidden = $(id).classList.contains("hidden");
+        closeUserMenus();
+        $(id).classList.toggle("hidden", !wasHidden);
+        lucide.createIcons();
+      }
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#user-menu, #user-menu-m")) closeUserMenus();
+      });
+
+      async function logout() {
+        try {
+          await api("/api/auth/logout", { method: "POST" });
+        } catch (e) {}
+        location.href = "/login";
+      }
+
+      // ---------- installable app (PWA) ----------
+      let installPrompt = null;
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      function showInstallButton() {
+        const b = $("btn-install");
+        if (b && !isStandalone) {
+          b.classList.remove("hidden");
+          b.classList.add("flex");
+        }
+      }
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        installPrompt = e;
+        showInstallButton();
+      });
+      window.addEventListener("appinstalled", () => {
+        installPrompt = null;
+        $("btn-install").classList.add("hidden");
+        toast("Fruit Lens installed!", "ok");
+      });
+      async function installApp() {
+        closeUserMenus();
+        if (installPrompt) {
+          installPrompt.prompt();
+          await installPrompt.userChoice.catch(() => {});
+          installPrompt = null;
+          $("btn-install").classList.add("hidden");
+        } else if (isIOS) {
+          toast("Tap the Share button, then 'Add to Home Screen'.", "info");
+        } else {
+          toast("Open your browser menu and choose 'Install app' / 'Add to Home screen'.", "info");
+        }
+      }
+      if (isIOS) showInstallButton(); // iOS has no install event: show the button with instructions
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () =>
+          navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((e) => console.warn("SW:", e)),
+        );
+      }
+
+      // ---------- init ----------
+      window.addEventListener("hashchange", route);
+      window.addEventListener("DOMContentLoaded", () => {
+        chart = new Chart($("conditionChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: ["No data"],
+            datasets: [
+              {
+                data: [1],
+                backgroundColor: ["#e5e7eb"],
+                borderWidth: 0,
+                hoverOffset: 4,
+              },
+            ],
+          },
+          options: {
+            cutout: "75%",
+            plugins: { legend: { display: false } },
+            responsive: true,
+            maintainAspectRatio: false,
+          },
+        });
+        $("global-search").addEventListener("input", (e) => {
+          libQuery = e.target.value;
+          if (activeTab === "library") renderLibrary();
+          else if (libQuery.trim()) location.hash = "#library";
+        });
+        api("/api/health")
+          .then(() => {
+            $("srv-dot").className =
+              "w-2 h-2 rounded-full bg-accent-green inline-block";
+            $("srv-text").textContent = "Server online";
+          })
+          .catch(() => {
+            $("srv-dot").className =
+              "w-2 h-2 rounded-full bg-accent-red inline-block";
+            $("srv-text").textContent = "Server offline";
+          });
+        loadMe().catch(() => {});
+        route();
+      });
+    </script>
+  </body>
+</html>

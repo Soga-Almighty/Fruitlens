@@ -1,0 +1,8 @@
+# SMALL local environment (~200 MB instead of ~2 GB): no TensorFlow, the models run on the TensorFlow Lite runtime.
+# Works on Python 3.10 - 3.12 (64-bit). Use it with:   pip install -r requirements-lite.txt
+# On Windows run the app with:  python app.py      (gunicorn is only for Linux servers)
+Flask
+Pillow
+numpy
+requests
+ai-edge-litert

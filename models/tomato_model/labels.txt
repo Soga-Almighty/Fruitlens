@@ -1,0 +1,3 @@
+0 tomat matang
+1 tomat mentah
+2 tomat busuk

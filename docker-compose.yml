@@ -1,0 +1,36 @@
+# For your own server (VPS). Start with:  docker compose up -d --build
+# Needs a ".env" next to this file with INSFORGE_URL, INSFORGE_ANON_KEY, SECRET_KEY and DOMAIN (see .env.example).
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      PORT: "8000"
+      TRUST_PROXY: "1"
+      APP_URL: https://${DOMAIN}
+    volumes:
+      - fruitlens_data:/data      # database, scan photos: survives restarts and updates
+    expose:
+      - "8000"
+
+  caddy:                          # public web server: gets and renews the HTTPS certificate by itself
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  fruitlens_data:
+  caddy_data:
+  caddy_config:
