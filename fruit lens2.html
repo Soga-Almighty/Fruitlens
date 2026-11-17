@@ -171,7 +171,11 @@
       #toasts {
         top: calc(env(safe-area-inset-top) + 1rem);
       }
-      @media (max-width: 1024px) {
+      @media (max-width: 1023px) {
+        /* hidden sibling pages still trigger Tailwind's space-y-8 margin: remove the empty gap above the page */
+        .app-main > .page-content {
+          margin-top: 0 !important;
+        }
         .mobile-nav {
           padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
           padding-left: env(safe-area-inset-left);
@@ -231,17 +235,18 @@
       }
 
       /* Mobile Adjustments */
-      @media (max-width: 1024px) {
+      /* !important: Tailwind's own "flex" class (loaded later) would otherwise win and keep the sidebar on phones */
+      @media (max-width: 1023px) {
         .desktop-sidebar {
-          display: none;
+          display: none !important;
         }
         .mobile-nav {
-          display: flex;
+          display: flex !important;
         }
       }
-      @media (min-width: 1025px) {
+      @media (min-width: 1024px) {
         .mobile-nav {
-          display: none;
+          display: none !important;
         }
       }
 
@@ -466,6 +471,14 @@
               />
             </div>
             <button
+              type="button"
+              onclick="toggleMobileSearch()"
+              class="sm:hidden w-10 h-10 rounded-full border border-forest-100 bg-white flex items-center justify-center text-forest-900 shrink-0"
+              aria-label="Search fruit guides"
+            >
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </button>
+            <button
               onclick="newScan()"
               class="flex items-center gap-2 bg-forest-500 hover:bg-forest-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-md shadow-forest-500/20 transition duration-200"
             >
@@ -474,6 +487,17 @@
             </button>
           </div>
         </header>
+        <div
+          id="mobile-search"
+          class="hidden px-4 py-2 bg-white border-b border-forest-100"
+        >
+          <input
+            id="global-search-m"
+            type="search"
+            placeholder="Search fruit guides..."
+            class="w-full bg-cream/80 border border-forest-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500/30"
+          />
+        </div>
 
         <!-- DASHBOARD CONTENT AREA (SCROLLABLE) -->
         <main
@@ -924,9 +948,9 @@
             <div
               class="bg-white p-6 lg:p-8 rounded-xl3 border border-forest-100 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between"
             >
-              <div class="flex items-center gap-6">
+              <div class="flex items-center gap-4 sm:gap-6 w-full md:w-auto min-w-0">
                 <div
-                  class="relative w-28 h-28 lg:w-32 lg:h-32 rounded-xl2 overflow-hidden border-2 border-forest-100 shadow-md shrink-0"
+                  class="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-xl2 overflow-hidden border-2 border-forest-100 shadow-md shrink-0"
                 >
                   <img
                     id="res-image"
@@ -935,8 +959,8 @@
                     alt="Detected Fruit"
                   />
                 </div>
-                <div class="space-y-2">
-                  <div class="flex items-center gap-2">
+                <div class="space-y-2 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
                     <span
                       id="res-badge-condition"
                       class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800"
@@ -950,11 +974,11 @@
                   </div>
                   <h2
                     id="res-fruit-name"
-                    class="font-display text-3xl font-bold text-forest-900"
+                    class="font-display text-2xl sm:text-3xl font-bold text-forest-900 break-words"
                   >
                     Banana (Cavendish)
                   </h2>
-                  <p class="text-xs text-gray-500 flex items-center gap-2">
+                  <p class="text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <i
                       data-lucide="shield-check"
                       class="w-4 h-4 text-forest-500"
@@ -1325,7 +1349,8 @@
             <div
               class="bg-white rounded-xl2 border border-forest-100 shadow-sm overflow-hidden"
             >
-              <div class="overflow-x-auto">
+              <div id="hist-cards" class="md:hidden divide-y divide-forest-100"></div>
+              <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                   <thead>
                     <tr
@@ -1542,6 +1567,10 @@
       <p class="js-user-count px-3 pt-2 text-[11px] text-gray-500">
         0 scans saved
       </p>
+      <div class="px-3 pt-1 pb-1 flex items-center gap-2 text-[11px] text-gray-500">
+        <span id="srv-dot-m" class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+        <span id="srv-text-m">Checking server...</span>
+      </div>
       <button
         id="btn-install"
         type="button"
@@ -1829,9 +1858,9 @@
             ([ic, tone, label, val, note, nc]) => `
                 <div class="${CARD} p-5 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-xl ${tone} flex items-center justify-center shrink-0"><i data-lucide="${ic}" class="w-6 h-6"></i></div>
-                    <div><p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">${label}</p>
+                    <div class="min-w-0"><p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">${label}</p>
                     <h3 class="text-2xl font-bold font-display text-forest-900">${val}</h3>
-                    <p class="text-[11px] ${nc} font-medium mt-0.5">${note}</p></div>
+                    <p class="text-[11px] ${nc} font-medium mt-0.5 break-words">${note}</p></div>
                 </div>`,
           )
           .join("");
@@ -2127,6 +2156,26 @@
               )
               .join("")
           : `<tr><td colspan="7" class="py-10 text-center text-gray-500">No scans found. Scan a fruit and it will be saved here automatically.</td></tr>`;
+        // Phone layout: one card per scan (same information as the table row)
+        $("hist-cards").innerHTML = scans.length
+          ? scans
+              .map(
+                (s) => `
+                <div class="p-4 flex items-center gap-3">
+                    <div onclick="location.hash='#result/${s.id}'" class="shrink-0">${thumb(s, "w-14 h-14 rounded-xl object-cover")}</div>
+                    <div onclick="location.hash='#result/${s.id}'" class="flex-1 min-w-0 space-y-1">
+                        <div class="flex items-center justify-between gap-2"><span class="font-bold text-forest-900 truncate">${esc(s.fruit_name)}</span>${badge(s.condition)}</div>
+                        <p class="text-[11px] text-gray-500">${fmtDate(s.created_at)}</p>
+                        <p class="text-[11px] text-gray-500">Confidence <span class="font-semibold text-forest-900">${s.confidence}%</span> · Freshness <span class="font-bold ${COND[s.condition].text}">${s.freshness}%</span></p>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 shrink-0">
+                        <button onclick="location.hash='#result/${s.id}'" class="px-3 py-2 min-h-[40px] text-xs text-forest-500 font-bold">View</button>
+                        <button onclick="deleteScan(${s.id}, loadHistory)" class="p-2 min-h-[40px] text-gray-400 active:text-accent-red" aria-label="Delete scan"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`,
+              )
+              .join("")
+          : `<p class="py-10 px-4 text-center text-gray-500 text-sm">No scans found. Scan a fruit and it will be saved here automatically.</p>`;
         lucide.createIcons();
       }
 
@@ -2422,6 +2471,23 @@
         location.href = "/login";
       }
 
+      function setServerStatus(ok) {
+        ["srv-dot", "srv-dot-m"].forEach((id) => {
+          $(id).className =
+            `w-2 h-2 rounded-full ${ok ? "bg-accent-green" : "bg-accent-red"} inline-block`;
+        });
+        ["srv-text", "srv-text-m"].forEach((id) => {
+          $(id).textContent = ok ? "Server online" : "Server offline";
+        });
+      }
+
+      function toggleMobileSearch() {
+        const bar = $("mobile-search");
+        const show = bar.classList.contains("hidden");
+        bar.classList.toggle("hidden", !show);
+        if (show) $("global-search-m").focus();
+      }
+
       // ---------- installable app (PWA) ----------
       let installPrompt = null;
       const isStandalone =
@@ -2490,21 +2556,21 @@
             maintainAspectRatio: false,
           },
         });
-        $("global-search").addEventListener("input", (e) => {
+        ["global-search", "global-search-m"].forEach((id) =>
+          $(id).addEventListener("input", onSearchInput),
+        );
+        function onSearchInput(e) {
           libQuery = e.target.value;
+          $("global-search").value = $("global-search-m").value = libQuery;
           if (activeTab === "library") renderLibrary();
           else if (libQuery.trim()) location.hash = "#library";
-        });
+        }
         api("/api/health")
           .then(() => {
-            $("srv-dot").className =
-              "w-2 h-2 rounded-full bg-accent-green inline-block";
-            $("srv-text").textContent = "Server online";
+            setServerStatus(true);
           })
           .catch(() => {
-            $("srv-dot").className =
-              "w-2 h-2 rounded-full bg-accent-red inline-block";
-            $("srv-text").textContent = "Server offline";
+            setServerStatus(false);
           });
         loadMe().catch(() => {});
         route();
