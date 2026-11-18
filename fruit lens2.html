@@ -9,6 +9,11 @@
     <title>Fruit Lens - Smart Vision for Fresher Choices</title>
     <!-- Mobile / installable app (PWA) -->
     <meta name="theme-color" content="#12261c" />
+    <script src="/static/i18n.js"></script>
+    <script>
+      /* If the language file could not load, keep the app working in English instead of stopping */
+      window.I18N = window.I18N || { lang: "en", t: function (s) { return s; }, locale: function () { return "en-US"; }, setLang: function () {} };
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="FruitLens" />
@@ -296,6 +301,7 @@
             </div>
             <div>
               <h1
+                data-no-i18n
                 class="font-display font-bold text-xl tracking-tight text-cream flex items-center gap-1"
               >
                 Fruit<span class="text-accent-orange">Lens</span>
@@ -381,6 +387,15 @@
                 <i data-lucide="scan" class="w-3.5 h-3.5"></i
                 ><span class="js-user-count">0 scans saved</span>
               </div>
+              <div class="px-3 pt-1 pb-2 space-y-1.5">
+                <p class="text-[11px] text-sage-300 flex items-center gap-2">
+                  <i data-lucide="languages" class="w-3.5 h-3.5"></i><span>Language</span>
+                </p>
+                <div class="fl-lang fl-wide text-white" data-no-i18n>
+                  <button type="button" data-lang-set="id">Indonesia</button>
+                  <button type="button" data-lang-set="en">English</button>
+                </div>
+              </div>
               <button
                 onclick="logout()"
                 class="w-full px-3 py-2.5 rounded-lg text-left text-xs font-semibold text-red-300 hover:bg-white/10 flex items-center gap-2"
@@ -443,7 +458,7 @@
               >
                 <i data-lucide="apple" class="w-4 h-4"></i>
               </div>
-              <span class="font-display font-bold text-lg text-forest-900"
+              <span data-no-i18n class="font-display font-bold text-lg text-forest-900"
                 >Fruit<span class="text-accent-orange">Lens</span></span
               >
             </div>
@@ -1571,6 +1586,15 @@
         <span id="srv-dot-m" class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
         <span id="srv-text-m">Checking server...</span>
       </div>
+      <div class="px-3 pt-2 pb-1 space-y-1.5">
+        <p class="text-[11px] text-gray-500 flex items-center gap-2">
+          <i data-lucide="languages" class="w-3.5 h-3.5"></i><span>Language</span>
+        </p>
+        <div class="fl-lang fl-wide text-forest-900" data-no-i18n>
+          <button type="button" data-lang-set="id">Indonesia</button>
+          <button type="button" data-lang-set="en">English</button>
+        </div>
+      </div>
       <button
         id="btn-install"
         type="button"
@@ -1705,7 +1729,8 @@
         if (!s) return "";
         const d = new Date(s.replace(" ", "T"));
         if (isNaN(d)) return s;
-        const time = d.toLocaleTimeString("en-US", {
+        const loc = I18N.locale();
+        const time = d.toLocaleTimeString(loc, {
           hour: "numeric",
           minute: "2-digit",
         });
@@ -1713,9 +1738,10 @@
           (new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) /
             864e5,
         );
-        if (days === 0) return `Today, ${time}`;
-        if (days === 1) return `Yesterday, ${time}`;
-        return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, ${time}`;
+        const id = I18N.lang === "id";
+        if (days === 0) return `${id ? "Hari ini" : "Today"}, ${time}`;
+        if (days === 1) return `${id ? "Kemarin" : "Yesterday"}, ${time}`;
+        return `${d.toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" })}, ${time}`;
       }
 
       const badge = (c) =>
@@ -1801,6 +1827,8 @@
       // ---------- dashboard ----------
       function greeting() {
         const h = new Date().getHours();
+        if (I18N.lang === "id")
+          return h < 11 ? "Selamat Pagi" : h < 15 ? "Selamat Siang" : h < 18 ? "Selamat Sore" : "Selamat Malam";
         return h < 11
           ? "Good Morning"
           : h < 15
@@ -1875,7 +1903,7 @@
         $("pct-ripe").textContent = pct(c.Ripe) + "%";
         $("pct-rotten").textContent = pct(c.Rotten) + "%";
         if (!chart) return;
-        chart.data.labels = t ? ["Unripe", "Ripe", "Rotten"] : ["No data"];
+        chart.data.labels = (t ? ["Unripe", "Ripe", "Rotten"] : ["No data"]).map(I18N.t);
         chart.data.datasets[0].data = t ? [c.Unripe, c.Ripe, c.Rotten] : [1];
         chart.data.datasets[0].backgroundColor = t
           ? ["#f39c12", "#27ae60", "#e74c3c"]
@@ -2112,7 +2140,7 @@
       }
 
       async function deleteScan(id, after) {
-        if (!confirm("Delete this scan record?")) return;
+        if (!confirm(I18N.t("Delete this scan record?"))) return;
         try {
           await api("/api/scans/" + id, { method: "DELETE" });
           toast("Record deleted", "ok");
@@ -2539,7 +2567,7 @@
         chart = new Chart($("conditionChart").getContext("2d"), {
           type: "doughnut",
           data: {
-            labels: ["No data"],
+            labels: [I18N.t("No data")],
             datasets: [
               {
                 data: [1],
@@ -2574,6 +2602,8 @@
           });
         loadMe().catch(() => {});
         route();
+        // Language changed: texts are swapped by i18n.js; reload the page data so dates, greeting and chart follow
+        window.addEventListener("fl-lang", () => route());
       });
     </script>
   </body>
