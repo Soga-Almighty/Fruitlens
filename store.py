@@ -188,8 +188,8 @@ def add_scans(rows):
     return _db("POST", f"{RECORDS}/scans", body=rows, prefer="return=minimal")
 
 
-def list_scans(fruit_slug=None, condition_name=None, q=None, limit=100, offset=0):
-    params = {"select": "*", "order": "id.desc", "limit": str(min(max(int(limit), 1), 1000)),
+def list_scans(fruit_slug=None, condition_name=None, q=None, limit=100, offset=0, columns="*"):
+    params = {"select": columns, "order": "id.desc", "limit": str(min(max(int(limit), 1), 1000)),
               **scan_params(fruit_slug, condition_name, q)}
     if offset:
         params["offset"] = str(int(offset))
@@ -199,6 +199,12 @@ def list_scans(fruit_slug=None, condition_name=None, q=None, limit=100, offset=0
 def get_scan(scan_id):
     rows = _db("GET", f"{RECORDS}/scans", params={"select": "*", "id": f"eq.{int(scan_id)}", "limit": "1"})
     return rows[0] if rows else None
+
+
+def set_scan_image(scan_id, image_file):
+    """Replace the photo of one of the caller's own scans (Row Level Security hides everybody else's rows)."""
+    _db("PATCH", f"{RECORDS}/scans", params={"id": f"eq.{int(scan_id)}"}, body={"image_file": image_file},
+        prefer="return=minimal")
 
 
 def delete_scan(scan_id):
@@ -223,7 +229,8 @@ def scans_since(days=14, limit=500):
 def export_scans(fruit_slug=None, condition_name=None, q=None, cap=10000):
     rows, offset = [], 0
     while offset < cap:
-        page = list_scans(fruit_slug, condition_name, q, limit=1000, offset=offset)
+        page = list_scans(fruit_slug, condition_name, q, limit=1000, offset=offset,
+                          columns="id,created_at,fruit,condition,confidence,freshness")  # no pictures in a CSV
         rows.extend(page)
         if len(page) < 1000:
             break

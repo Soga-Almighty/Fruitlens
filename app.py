@@ -1,3 +1,4 @@
+import base64
 import csv
 import io
 import json
@@ -207,14 +208,17 @@ def predict_probabilities(fruit, image):
 # --------------------------------------------------------------------------- #
 # Scan persistence (the data lives in the InsForge database, see store.py; photos stay on this server)
 # --------------------------------------------------------------------------- #
-def save_thumbnail(image, user_id):
-    folder = UPLOAD_DIR / user_id  # one folder per user: ownership is checked from the URL, no lookup needed
-    folder.mkdir(parents=True, exist_ok=True)
-    name = f"{uuid.uuid4().hex}.jpg"
-    thumb = image.copy()
-    thumb.thumbnail((640, 640))
-    thumb.save(folder / name, "JPEG", quality=85)
-    return name
+def save_thumbnail(image, user_id=None):
+    """Small JPEG stored as a data: URL inside the scan row itself (InsForge database).
+
+    Keeping the photo with the scan means it survives restarts and redeploys; a file on the server's disk is wiped
+    on hosts without a persistent volume (e.g. Railway), which left the history without pictures.
+    """
+    thumb = image.convert("RGB")
+    thumb.thumbnail((256, 256))
+    buf = io.BytesIO()
+    thumb.save(buf, "JPEG", quality=72, optimize=True)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
 def scan_payload(scan):
@@ -224,7 +228,14 @@ def scan_payload(scan):
     scan = dict(scan)
     probabilities = scan.get("probabilities") or []
     scan["probabilities"] = json.loads(probabilities) if isinstance(probabilities, str) else probabilities
-    scan["image_url"] = f"/uploads/{scan['user_id']}/{scan['image_file']}" if scan.get("image_file") else None
+    image = scan.get("image_file")
+    if image and image.startswith("data:image/"):
+        scan["image_url"] = image  # new scans: the picture is part of the row
+    elif image:
+        scan["image_url"] = f"/uploads/{scan['user_id']}/{image}"  # older scans: file on the server's disk
+    else:
+        scan["image_url"] = None
+    scan.pop("image_file", None)  # the picture is already in image_url; do not send it twice
     scan["fruit_name"] = guide.get("name", scan["fruit"].title())
     scan["low_confidence"] = (scan.get("confidence") or 0) < LOW_CONFIDENCE
     scan["fruit_info"] = guide
@@ -249,13 +260,9 @@ def predict_and_save(user_id, fruit, image):
     stage = (store.condition(fruit, condition) or {}).get("stage", 2)
 
     photo = save_thumbnail(image, user_id)
-    try:
-        row = store.add_scan({"user_id": user_id, "fruit": fruit, "label": breakdown[top]["label"],
-                              "condition": condition, "confidence": round(float(probs[top]) * 100, 2),
-                              "freshness": freshness, "stage": stage, "probabilities": breakdown, "image_file": photo})
-    except Exception:
-        (UPLOAD_DIR / user_id / photo).unlink(missing_ok=True)  # do not keep a photo of a scan that was not saved
-        raise
+    row = store.add_scan({"user_id": user_id, "fruit": fruit, "label": breakdown[top]["label"],
+                          "condition": condition, "confidence": round(float(probs[top]) * 100, 2),
+                          "freshness": freshness, "stage": stage, "probabilities": breakdown, "image_file": photo})
     return scan_payload(row)
 
 
@@ -382,13 +389,45 @@ def get_scan(scan_id):
     return jsonify(scan_payload(scan))
 
 
+@app.get("/api/restore-photos")
+def restore_photos():
+    """One-time repair: copy old photo files found in THIS computer's uploads/ folder into the signed-in user's scans.
+
+    Scans made on a computer whose photos never reached the server show an empty picture. Run the app on that
+    computer, sign in, and open /api/restore-photos once. It is safe to repeat: scans that already have their
+    picture inside the row are skipped.
+    """
+    files = {p.name: p for p in UPLOAD_DIR.rglob("*") if p.is_file()}
+    restored = no_file = already = 0
+    errors = []
+    for row in store.list_scans(limit=1000, columns="id,image_file"):
+        name = row.get("image_file")
+        if not name or name.startswith("data:"):
+            already += 1
+            continue
+        path = files.get(name)
+        if not path:
+            no_file += 1
+            continue
+        try:
+            with Image.open(path) as im:
+                data = save_thumbnail(ImageOps.exif_transpose(im))
+            store.set_scan_image(row["id"], data)
+            restored += 1
+        except Exception as e:  # keep going: one bad file must not stop the rest
+            errors.append(f"scan {row['id']}: {e}")
+    return jsonify({"restored": restored, "already_ok_or_no_photo": already, "photo_not_on_this_computer": no_file,
+                    "errors": errors[:5]})
+
+
 @app.delete("/api/scans/<int:scan_id>")
 def delete_scan(scan_id):
     scan = store.delete_scan(scan_id)
     if not scan:
         return jsonify({"error": "Scan not found."}), 404
-    if scan.get("image_file"):
-        (UPLOAD_DIR / g.user["id"] / scan["image_file"]).unlink(missing_ok=True)
+    image = scan.get("image_file")
+    if image and not image.startswith("data:"):  # old-style photo file on the disk; new ones go away with the row
+        (UPLOAD_DIR / g.user["id"] / image).unlink(missing_ok=True)
     return jsonify({"deleted": scan_id})
 
 
